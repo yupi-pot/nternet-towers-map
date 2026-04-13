@@ -1,47 +1,56 @@
-import { useState, useEffect } from 'react';
-import { CellTower, UserLocation } from '../types';
-import { fetchTowers } from '../api/opencellid';
+import { useState, useEffect, useRef } from 'react';
+import { CellTower } from '../types';
+import { fetchTowers, ViewportBBox } from '../api/opencellid';
 
 interface UseTowersResult {
   towers: CellTower[];
+  fetchedBBox: ViewportBBox | null;
   isLoading: boolean;
   error: string | null;
-  refresh: () => void;
 }
 
-/**
- * Загружает вышки вокруг пользователя.
- * Перезагружает при изменении location или вызове refresh().
- */
-export function useTowers(location: UserLocation | null): UseTowersResult {
+export function useTowers(bbox: ViewportBBox | null, fetchKey: number): UseTowersResult {
   const [towers, setTowers] = useState<CellTower[]>([]);
+  const [fetchedBBox, setFetchedBBox] = useState<ViewportBBox | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Счётчик для ручного обновления — инкремент запускает useEffect заново
-  const [refreshCount, setRefreshCount] = useState(0);
+  const minLat = bbox?.minLat ?? null;
+  const maxLat = bbox?.maxLat ?? null;
+  const minLon = bbox?.minLon ?? null;
+  const maxLon = bbox?.maxLon ?? null;
 
   useEffect(() => {
-    if (!location) return; // геолокация ещё не готова
+    if (minLat === null || maxLat === null || minLon === null || maxLon === null) return;
 
-    async function load() {
-      setIsLoading(true);
-      setError(null);
+    if (timerRef.current) clearTimeout(timerRef.current);
 
-      const result = await fetchTowers(location!);
+    setTowers([]);
+    setFetchedBBox(null);
+    setError(null);
+    setIsLoading(true);
+
+    timerRef.current = setTimeout(async () => {
+      const { towers: result, fetchedBBox: resultBBox } = await fetchTowers({
+        minLat, maxLat, minLon, maxLon,
+      });
 
       if (result.length === 0) {
-        setError('Вышки не найдены или превышен лимит API');
+        setError('No towers found');
+        setTowers([]);
+      } else {
+        setTowers(result);
       }
 
-      setTowers(result);
+      setFetchedBBox(resultBBox);
       setIsLoading(false);
-    }
+    }, 300);
 
-    load();
-  }, [location, refreshCount]);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [minLat, maxLat, minLon, maxLon, fetchKey]);
 
-  const refresh = () => setRefreshCount((n) => n + 1);
-
-  return { towers, isLoading, error, refresh };
+  return { towers, fetchedBBox, isLoading, error };
 }

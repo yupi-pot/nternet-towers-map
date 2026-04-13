@@ -1,78 +1,109 @@
-// ============================================================
-// Запросы к OpenCelliD API
-// Документация: http://wiki.opencellid.org/wiki/API
-// ============================================================
+import { CellTower, OpenCellIdResponse } from '../types';
 
-import { CellTower, OpenCellIdResponse, UserLocation } from '../types';
-
-const API_TOKEN = 'pk.3624ebccd066632db9ab719c2a98b456';
+const API_TOKEN = process.env.EXPO_PUBLIC_OPENCELLID_TOKEN ?? '';
 const BASE_URL = 'https://www.opencellid.org/cell/getInArea';
 
-/**
- * Вычисляет bounding box вокруг точки с заданным радиусом.
- *
- * API принимает BBOX в формате: "minLat,minLon,maxLat,maxLon"
- *
- * Почему именно так:
- * - 1° широты ≈ 111 км (константа)
- * - 1° долготы ≈ 111 * cos(широта) км (уменьшается у полюсов)
- */
-function getBoundingBox(center: UserLocation, radiusKm: number): string {
-  const deltaLat = radiusKm / 111;
-  const deltaLon = radiusKm / (111 * Math.cos((center.latitude * Math.PI) / 180));
+const MAX_AREA_M2 = 4_000_000;
+// Full bbox is clamped to 4 tiles × MAX_AREA_M2 with a safety margin
+const MAX_FETCH_AREA_M2 = MAX_AREA_M2 * 4 * 0.99;
 
-  const minLat = center.latitude - deltaLat;
-  const maxLat = center.latitude + deltaLat;
-  const minLon = center.longitude - deltaLon;
-  const maxLon = center.longitude + deltaLon;
+const MIN_SAMPLES = 1;
+const MAX_RANGE_M = 50_000;
 
-  return `${minLat},${minLon},${maxLat},${maxLon}`;
+export interface ViewportBBox {
+  minLat: number;
+  minLon: number;
+  maxLat: number;
+  maxLon: number;
 }
 
-/**
- * Загружает вышки вокруг заданной точки.
- *
- * @param location — координаты центра поиска
- * @param radiusKm — радиус в километрах (по умолчанию 5)
- */
-export async function fetchTowers(
-  location: UserLocation,
-  radiusKm: number = 0.7
-): Promise<CellTower[]> {
-  const bbox = getBoundingBox(location, radiusKm);
+function bboxAreaM2(bbox: ViewportBBox): number {
+  const heightM = (bbox.maxLat - bbox.minLat) * 111_000;
+  const midLat = (bbox.minLat + bbox.maxLat) / 2;
+  const widthM =
+    (bbox.maxLon - bbox.minLon) * 111_000 * Math.cos((midLat * Math.PI) / 180);
+  return heightM * widthM;
+}
 
+/** Clamps full bbox to MAX_FETCH_AREA_M2 before splitting into tiles */
+function clampBBox(bbox: ViewportBBox): ViewportBBox {
+  const area = bboxAreaM2(bbox);
+  if (area <= MAX_FETCH_AREA_M2) return bbox;
+
+  const scale = Math.sqrt(MAX_FETCH_AREA_M2 / area);
+  const centerLat = (bbox.minLat + bbox.maxLat) / 2;
+  const centerLon = (bbox.minLon + bbox.maxLon) / 2;
+  const halfLatDelta = ((bbox.maxLat - bbox.minLat) / 2) * scale;
+  const halfLonDelta = ((bbox.maxLon - bbox.minLon) / 2) * scale;
+
+  return {
+    minLat: centerLat - halfLatDelta,
+    maxLat: centerLat + halfLatDelta,
+    minLon: centerLon - halfLonDelta,
+    maxLon: centerLon + halfLonDelta,
+  };
+}
+
+/** Clamps full bbox first, then splits into 4 perfectly adjacent tiles */
+function splitBBox2x2(bbox: ViewportBBox): ViewportBBox[] {
+  const clamped = clampBBox(bbox);
+  const midLat = (clamped.minLat + clamped.maxLat) / 2;
+  const midLon = (clamped.minLon + clamped.maxLon) / 2;
+
+  return [
+    { minLat: clamped.minLat, minLon: clamped.minLon, maxLat: midLat,          maxLon: midLon          },
+    { minLat: clamped.minLat, minLon: midLon,          maxLat: midLat,          maxLon: clamped.maxLon  },
+    { minLat: midLat,         minLon: clamped.minLon,  maxLat: clamped.maxLat,  maxLon: midLon          },
+    { minLat: midLat,         minLon: midLon,          maxLat: clamped.maxLat,  maxLon: clamped.maxLon  },
+  ];
+}
+
+function towerKey(tower: CellTower): string {
+  return `${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`;
+}
+
+async function fetchTileTowers(bbox: ViewportBBox): Promise<CellTower[]> {
+  const bboxStr = `${bbox.minLat},${bbox.minLon},${bbox.maxLat},${bbox.maxLon}`;
   const params = new URLSearchParams({
     key: API_TOKEN,
-    BBOX: bbox,
+    BBOX: bboxStr,
     format: 'json',
+    limit: '1000',
   });
 
-  const url = `${BASE_URL}?${params.toString()}`;
-  console.log('[OpenCelliD] Запрос:', url);
-
   try {
-    const response = await fetch(url);
+    const response = await fetch(`${BASE_URL}?${params.toString()}`);
+    if (!response.ok) return [];
 
-    if (!response.ok) {
-      // 403 = невалидный токен, 429 = превышен лимит запросов
-      console.error('[OpenCelliD] HTTP ошибка:', response.status);
+    const data = await response.json();
+    if ('error' in data) {
+      console.error('[OpenCelliD] API error:', data.error);
       return [];
     }
 
-    const data = await response.json();
-    console.log('[OpenCelliD] Ответ:', JSON.stringify(data));
-
     const cells = (data as OpenCellIdResponse).cells ?? [];
-    console.log('[OpenCelliD] Координаты:', cells.map((c) => `lat=${c.lat} lon=${c.lon}`));
-
-    // Явное приведение к числу — OpenCelliD может вернуть строки вместо чисел
-    return cells.map((cell) => ({
-      ...cell,
-      lat: Number(cell.lat),
-      lon: Number(cell.lon),
-    }));
+    return cells
+      .filter((cell) => cell.samples >= MIN_SAMPLES && cell.range <= MAX_RANGE_M)
+      .map((cell) => ({ ...cell, lat: Number(cell.lat), lon: Number(cell.lon) }));
   } catch (error) {
-    console.error('[OpenCelliD] Сетевая ошибка:', error);
+    console.error('[OpenCelliD] Network error:', error);
     return [];
   }
+}
+
+export async function fetchTowers(bbox: ViewportBBox): Promise<{ towers: CellTower[]; fetchedBBox: ViewportBBox }> {
+  const clamped = clampBBox(bbox);
+  const tiles = splitBBox2x2(bbox);
+  const tileResults = await Promise.all(tiles.map(fetchTileTowers));
+  const merged = tileResults.flat();
+
+  const deduped = Array.from(
+    merged.reduce((map, tower) => {
+      map.set(towerKey(tower), tower);
+      return map;
+    }, new Map<string, CellTower>()).values()
+  );
+
+  console.log(`[OpenCelliD] Tiles: ${merged.length} raw → ${deduped.length} after dedupe`);
+  return { towers: deduped, fetchedBBox: clamped };
 }
