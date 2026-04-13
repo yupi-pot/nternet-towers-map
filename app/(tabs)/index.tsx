@@ -1,31 +1,22 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  ActivityIndicator,
-  Pressable,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import ClusterMapView from 'react-native-map-clustering';
-import { Marker, Region } from 'react-native-maps';
 import * as Clipboard from 'expo-clipboard';
+import React, { useCallback, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Region } from 'react-native-maps';
+import ClusterMapView, { Marker } from 'react-native-map-clustering';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useLocation } from '@/src/hooks/useLocation';
-import { useTowers } from '@/src/hooks/useTowers';
-import { ViewportBBox } from '@/src/api/opencellid';
-import { CellTower, RADIO_LABELS, RADIO_COLORS } from '@/src/types';
+import { useTowersContext } from '@/src/context/TowersContext';
+import { CellTower, RADIO_COLORS, RADIO_LABELS } from '@/src/types';
 
-function regionToBBox(region: Region): ViewportBBox {
-  return {
-    minLat: region.latitude - region.latitudeDelta / 2,
-    maxLat: region.latitude + region.latitudeDelta / 2,
-    minLon: region.longitude - region.longitudeDelta / 2,
-    maxLon: region.longitude + region.longitudeDelta / 2,
-  };
-}
+// ─── Tower detail modal ────────────────────────────────────────────────────────
 
 function TowerInfoModal({
   tower,
@@ -44,9 +35,7 @@ function TowerInfoModal({
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
           <View style={styles.cardHeader}>
-            <View
-              style={[styles.networkBadge, { backgroundColor: RADIO_COLORS[tower.radio] }]}
-            >
+            <View style={[styles.networkBadge, { backgroundColor: RADIO_COLORS[tower.radio] }]}>
               <Text style={styles.networkBadgeText}>{RADIO_LABELS[tower.radio]}</Text>
             </View>
             <TouchableOpacity onPress={onClose}>
@@ -99,6 +88,8 @@ function InfoRow({
   );
 }
 
+// ─── Filter chips ──────────────────────────────────────────────────────────────
+
 const ALL_RADIOS: CellTower['radio'][] = ['GSM', 'UMTS', 'LTE', 'NR'];
 const RADIO_SHORT: Record<CellTower['radio'], string> = {
   GSM: '2G',
@@ -107,69 +98,54 @@ const RADIO_SHORT: Record<CellTower['radio'], string> = {
   NR: '5G',
 };
 
-export default function MapTab() {
-  const { location, errorMsg, isLoading: locationLoading } = useLocation();
+// ─── Map screen ───────────────────────────────────────────────────────────────
 
-  const [fetchBBox, setFetchBBox] = useState<ViewportBBox | null>(null);
-  const [fetchKey, setFetchKey] = useState(0);
-  const mapRegionRef = useRef<Region | null>(null);
-  const initializedRef = useRef(false);
+export default function MapTab() {
+  const {
+    towers,
+    isLoading: towersLoading,
+    error: towersError,
+    location,
+    locationLoading,
+    locationError,
+    mapRegionRef,
+    refreshCurrentRegion,
+  } = useTowersContext();
+
+  // Chip state (instant) vs map state (debounced)
+  const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
+  const [mapFilters, setMapFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
+  const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [hasPanned, setHasPanned] = useState(false);
+  const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapRef = useRef<any>(null);
   const firstFetchDoneRef = useRef(false);
   const userHasDraggedRef = useRef(false);
 
-  const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(
-    new Set(ALL_RADIOS),
-  );
-  // mapFilters is debounced — chips update instantly, map waits 200 ms to avoid crash
-  const [mapFilters, setMapFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
-  const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [hasPanned, setHasPanned] = useState(false);
-
-  useEffect(() => {
-    if (!location || initializedRef.current) return;
-    initializedRef.current = true;
-    const initialRegion: Region = {
-      latitude: location.latitude,
-      longitude: location.longitude,
-      latitudeDelta: 0.015,
-      longitudeDelta: 0.015,
-    };
-    mapRegionRef.current = initialRegion;
-    setFetchBBox(regionToBBox(initialRegion));
-  }, [location]);
-
-  const { towers, isLoading: towersLoading, error: towersError } = useTowers(
-    fetchBBox,
-    fetchKey,
-  );
-
-  useEffect(() => {
-    if (towers.length > 0) firstFetchDoneRef.current = true;
-  }, [towers]);
-
-  const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapRef = useRef<any>(null);
+  if (towers.length > 0) firstFetchDoneRef.current = true;
 
   const handleRefresh = useCallback(() => {
-    const region = mapRegionRef.current;
-    if (!region) return;
-    setFetchBBox(regionToBBox(region));
-    setFetchKey((k) => k + 1);
+    refreshCurrentRegion();
     setHasPanned(false);
     userHasDraggedRef.current = false;
-  }, []);
+  }, [refreshCurrentRegion]);
 
   const handlePanDrag = useCallback(() => {
     userHasDraggedRef.current = true;
   }, []);
 
-  const handleRegionChangeComplete = useCallback((region: Region) => {
-    mapRegionRef.current = region;
-    if (userHasDraggedRef.current && firstFetchDoneRef.current) {
-      setHasPanned(true);
-    }
-  }, []);
+  const handleRegionChangeComplete = useCallback(
+    (region: Region) => {
+      mapRegionRef.current = region;
+      if (userHasDraggedRef.current && firstFetchDoneRef.current) {
+        setHasPanned(true);
+      }
+    },
+    [mapRegionRef],
+  );
 
   const handleMyLocation = useCallback(() => {
     if (!location || !mapRef.current) return;
@@ -210,10 +186,10 @@ export default function MapTab() {
     );
   }
 
-  if (errorMsg) {
+  if (locationError) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{errorMsg}</Text>
+        <Text style={styles.errorText}>{locationError}</Text>
       </View>
     );
   }
