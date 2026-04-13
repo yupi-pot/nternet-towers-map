@@ -120,6 +120,9 @@ export default function MapTab() {
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(
     new Set(ALL_RADIOS),
   );
+  // mapFilters is debounced — chips update instantly, map waits 200 ms to avoid crash
+  const [mapFilters, setMapFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
+  const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [hasPanned, setHasPanned] = useState(false);
 
   useEffect(() => {
@@ -189,19 +192,14 @@ export default function MapTab() {
       } else {
         next.add(radio);
       }
+      if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
+      filterTimerRef.current = setTimeout(() => setMapFilters(new Set(next)), 200);
       return next;
     });
   }, []);
 
-  const filteredTowers = towers.filter((t) => activeFilters.has(t.radio));
-
-  const countByRadio = towers.reduce<Partial<Record<CellTower['radio'], number>>>(
-    (acc, t) => {
-      acc[t.radio] = (acc[t.radio] ?? 0) + 1;
-      return acc;
-    },
-    {},
-  );
+  const filteredTowers = towers.filter((t) => mapFilters.has(t.radio));
+  const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
 
   if (locationLoading) {
     return (
@@ -260,7 +258,7 @@ export default function MapTab() {
             ) : (
               <Text style={styles.statusText}>
                 {towers.length > 0
-                  ? `${filteredTowers.length} of ${towers.length} towers`
+                  ? `${displayCount} of ${towers.length} towers`
                   : (towersError ?? 'No towers found')}
               </Text>
             )}
@@ -312,21 +310,6 @@ export default function MapTab() {
       <TouchableOpacity style={styles.myLocationBtn} onPress={handleMyLocation}>
         <Text style={styles.myLocationIcon}>⊙</Text>
       </TouchableOpacity>
-
-      {/* Legend */}
-      <View style={styles.legend} pointerEvents="none">
-        {(Object.entries(RADIO_LABELS) as [keyof typeof RADIO_LABELS, string][]).map(
-          ([radio, label]) => (
-            <View key={radio} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: RADIO_COLORS[radio] }]} />
-              <Text style={styles.legendText}>
-                {label}
-                {countByRadio[radio] != null ? ` — ${countByRadio[radio]}` : ''}
-              </Text>
-            </View>
-          ),
-        )}
-      </View>
 
       <TowerInfoModal tower={selectedTower} onClose={() => setSelectedTower(null)} />
     </View>
@@ -448,24 +431,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   myLocationIcon: { fontSize: 22, color: '#3b82f6' },
-
-  legend: {
-    position: 'absolute',
-    bottom: 30,
-    left: 16,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 12,
-    padding: 12,
-    gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendText: { fontSize: 12, color: '#1e293b' },
 
   overlay: {
     flex: 1,
