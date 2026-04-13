@@ -1,36 +1,22 @@
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Tabs } from 'expo-router';
-
-function TabIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={24} {...props} />;
-}
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: '#3b82f6',
-        // Скрываем заголовок экрана — на карте он не нужен
-        headerShown: false,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Карта',
-          tabBarIcon: ({ color }) => <TabIcon name="map" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Список',
-          tabBarIcon: ({ color }) => <TabIcon name="list" color={color} />,
-        }}
-      />
-    </Tabs>
+    <NativeTabs tintColor="#3b82f6">
+      <NativeTabs.Trigger name="index">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'map', selected: 'map.fill' }}
+          md="map"
+        />
+        <NativeTabs.Trigger.Label>Map</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="two">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'list.bullet', selected: 'list.bullet' }}
+          md="format_list_bulleted"
+        />
+        <NativeTabs.Trigger.Label>List</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }
