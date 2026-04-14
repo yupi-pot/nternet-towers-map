@@ -1,94 +1,22 @@
-import * as Clipboard from 'expo-clipboard';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
-  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { Region } from 'react-native-maps';
-import ClusterMapView, { Marker } from 'react-native-map-clustering';
+import ClusterMapView from 'react-native-map-clustering';
+import { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import TowerDetailModal from '@/src/components/TowerDetailModal';
+import PaywallModal from '@/src/components/PaywallModal';
+import { usePremium } from '@/src/context/PremiumContext';
 import { useTowersContext } from '@/src/context/TowersContext';
+import { haversineDistance, FREE_TOWER_LIMIT } from '@/src/utils/towerUtils';
 import { CellTower, RADIO_COLORS, RADIO_LABELS } from '@/src/types';
-
-// ─── Tower detail modal ────────────────────────────────────────────────────────
-
-function TowerInfoModal({
-  tower,
-  onClose,
-}: {
-  tower: CellTower | null;
-  onClose: () => void;
-}) {
-  if (!tower) return null;
-
-  const handleCopyCoords = () =>
-    Clipboard.setStringAsync(`${tower.lat.toFixed(6)}, ${tower.lon.toFixed(6)}`);
-
-  return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.networkBadge, { backgroundColor: RADIO_COLORS[tower.radio] }]}>
-              <Text style={styles.networkBadgeText}>{RADIO_LABELS[tower.radio]}</Text>
-            </View>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.closeBtn}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          <InfoRow label="Cell ID" value={String(tower.cellid)} />
-          <InfoRow label="MCC / MNC" value={`${tower.mcc} / ${tower.mnc}`} />
-          <InfoRow label="LAC" value={String(tower.lac)} />
-          <TouchableOpacity onPress={handleCopyCoords}>
-            <InfoRow
-              label="Coordinates"
-              value={`${tower.lat.toFixed(5)}, ${tower.lon.toFixed(5)}`}
-              action="Copy"
-            />
-          </TouchableOpacity>
-          <InfoRow label="Coverage radius" value={`~${tower.range} m`} />
-          <InfoRow label="Measurements" value={String(tower.samples)} />
-          {tower.averageSignalStrength !== 0 && (
-            <InfoRow label="Avg signal" value={`${tower.averageSignalStrength} dBm`} />
-          )}
-
-          <Text style={styles.hint}>
-            MCC = country code · MNC = operator code · tap coords to copy
-          </Text>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
-
-function InfoRow({
-  label,
-  value,
-  action,
-}: {
-  label: string;
-  value: string;
-  action?: string;
-}) {
-  return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <View style={styles.infoRight}>
-        <Text style={styles.infoValue}>{value}</Text>
-        {action && <Text style={styles.infoAction}>{action}</Text>}
-      </View>
-    </View>
-  );
-}
-
-// ─── Filter chips ──────────────────────────────────────────────────────────────
 
 const ALL_RADIOS: CellTower['radio'][] = ['GSM', 'UMTS', 'LTE', 'NR'];
 const RADIO_SHORT: Record<CellTower['radio'], string> = {
@@ -97,8 +25,6 @@ const RADIO_SHORT: Record<CellTower['radio'], string> = {
   LTE: '4G',
   NR: '5G',
 };
-
-// ─── Map screen ───────────────────────────────────────────────────────────────
 
 export default function MapTab() {
   const {
@@ -112,13 +38,16 @@ export default function MapTab() {
     refreshCurrentRegion,
   } = useTowersContext();
 
-  // Chip state (instant) vs map state (debounced)
+  const { isPremium } = usePremium();
+
+  // Network type filter
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const [mapFilters, setMapFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [hasPanned, setHasPanned] = useState(false);
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
@@ -174,14 +103,34 @@ export default function MapTab() {
     });
   }, []);
 
-  const filteredTowers = towers.filter((t) => mapFilters.has(t.radio));
-  const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
+  // Apply network filter, then free-tier tower limit (nearest N towers)
+  const filteredTowers = useMemo(() => {
+    const byType = towers.filter((t) => mapFilters.has(t.radio));
+    if (isPremium || !location) return byType;
+    return byType
+      .map((t) => ({
+        t,
+        d: haversineDistance(location.latitude, location.longitude, t.lat, t.lon),
+      }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, FREE_TOWER_LIMIT)
+      .map(({ t }) => t);
+  }, [towers, mapFilters, isPremium, location]);
+
+  const displayCount = useMemo(() => {
+    const byType = towers.filter((t) => activeFilters.has(t.radio));
+    if (isPremium || !location) return byType.length;
+    return Math.min(byType.length, FREE_TOWER_LIMIT);
+  }, [towers, activeFilters, isPremium, location]);
+
+  const totalCount = towers.filter((t) => activeFilters.has(t.radio)).length;
+  const isLimited = !isPremium && totalCount > FREE_TOWER_LIMIT;
 
   if (locationLoading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Getting location...</Text>
+        <Text style={styles.loadingText}>Getting location…</Text>
       </View>
     );
   }
@@ -225,20 +174,26 @@ export default function MapTab() {
         ))}
       </ClusterMapView>
 
-      {/* Status chip + filter chips */}
+      {/* Top overlay: status + filters */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
         <View style={styles.statusRow} pointerEvents="auto">
-          <View style={styles.statusChip}>
+          <TouchableOpacity
+            style={styles.statusChip}
+            onPress={isLimited ? () => setShowPaywall(true) : undefined}
+            activeOpacity={isLimited ? 0.7 : 1}
+          >
             {towersLoading ? (
               <ActivityIndicator size="small" color="#1e293b" />
             ) : (
               <Text style={styles.statusText}>
                 {towers.length > 0
-                  ? `${displayCount} of ${towers.length} towers`
+                  ? isLimited
+                    ? `${displayCount} of ${totalCount} towers · 👑 Unlock all`
+                    : `${displayCount} of ${totalCount} towers`
                   : (towersError ?? 'No towers found')}
               </Text>
             )}
-          </View>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={handleRefresh}>
             <Text style={styles.iconBtnText}>⟳</Text>
           </TouchableOpacity>
@@ -275,7 +230,6 @@ export default function MapTab() {
           <TouchableOpacity
             style={styles.searchAreaBtn}
             onPress={handleRefresh}
-            pointerEvents="auto"
           >
             <Text style={styles.searchAreaText}>Search this area</Text>
           </TouchableOpacity>
@@ -287,7 +241,18 @@ export default function MapTab() {
         <Text style={styles.myLocationIcon}>⊙</Text>
       </TouchableOpacity>
 
-      <TowerInfoModal tower={selectedTower} onClose={() => setSelectedTower(null)} />
+      <TowerDetailModal
+        tower={selectedTower}
+        userLat={location?.latitude ?? null}
+        userLon={location?.longitude ?? null}
+        onClose={() => setSelectedTower(null)}
+      />
+
+      <PaywallModal
+        visible={showPaywall}
+        featureName="Unlimited towers"
+        onClose={() => setShowPaywall(false)}
+      />
     </View>
   );
 }
@@ -407,44 +372,4 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   myLocationIcon: { fontSize: 22, color: '#3b82f6' },
-
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 36,
-    gap: 4,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  networkBadge: {
-    borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-  },
-  networkBadgeText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  closeBtn: { fontSize: 18, color: '#94a3b8', padding: 4 },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  infoRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  infoLabel: { fontSize: 14, color: '#64748b' },
-  infoValue: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
-  infoAction: { fontSize: 12, color: '#3b82f6', fontWeight: '600' },
-  hint: { marginTop: 12, fontSize: 12, color: '#94a3b8', textAlign: 'center' },
 });
