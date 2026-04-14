@@ -196,7 +196,7 @@ export default function ListTab() {
 
       {__DEV__ && (
         <TouchableOpacity
-          style={[styles.debugBtn, { bottom: insets.bottom + 8 }]}
+          style={[styles.debugBtn, { bottom: insets.bottom + 90 }]}
           onPress={() =>
             Alert.alert('Reset Onboarding', 'Show onboarding flow again?', [
               { text: 'Cancel', style: 'cancel' },
@@ -324,6 +324,7 @@ const styles = StyleSheet.create({
   debugBtn: {
     position: 'absolute',
     alignSelf: 'center',
+    zIndex: 20,
     paddingVertical: 6,
     paddingHorizontal: 14,
     backgroundColor: '#fee2e2',
