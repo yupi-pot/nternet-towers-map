@@ -25,34 +25,43 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
     if (fontError) throw fontError;
   }, [fontError]);
 
-  useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
-
-  if (!fontsLoaded) return null;
-
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-  const [onboardingChecked, setOnboardingChecked] = useState(false);
-
+  // Check onboarding state independently of font loading
   useEffect(() => {
     SecureStore.getItemAsync('hasSeenOnboarding').then((val) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (!val) router.replace('/onboarding' as any);
+      setNeedsOnboarding(!val);
       setOnboardingChecked(true);
     });
   }, []);
 
-  // Don't render the navigator until we know which route to start on
-  if (!onboardingChecked) return null;
+  // Only hide the splash once BOTH fonts and the onboarding check are ready —
+  // this prevents the white-screen flash that happens if we hide while returning null.
+  useEffect(() => {
+    if (fontsLoaded && onboardingChecked) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, onboardingChecked]);
+
+  if (!fontsLoaded || !onboardingChecked) return null;
+
+  return <RootLayoutNav needsOnboarding={needsOnboarding} />;
+}
+
+function RootLayoutNav({ needsOnboarding }: { needsOnboarding: boolean }) {
+  const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    if (needsOnboarding) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.replace('/onboarding' as any);
+    }
+  }, [needsOnboarding]);
 
   return (
     <PremiumProvider>
