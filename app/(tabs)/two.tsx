@@ -1,6 +1,9 @@
+import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import React, { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -188,6 +191,27 @@ export default function ListTab() {
         userLon={location?.longitude ?? null}
         onClose={() => setSelectedTower(null)}
       />
+
+      {__DEV__ && (
+        <TouchableOpacity
+          style={styles.debugBtn}
+          onPress={() =>
+            Alert.alert('Reset Onboarding', 'This will show onboarding on next launch.', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Reset & Show Now',
+                style: 'destructive',
+                onPress: async () => {
+                  await SecureStore.deleteItemAsync('hasSeenOnboarding');
+                  router.replace('/onboarding' as never);
+                },
+              },
+            ])
+          }
+        >
+          <Text style={styles.debugBtnText}>⚙ Reset Onboarding</Text>
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 }
@@ -268,4 +292,17 @@ const styles = StyleSheet.create({
   confDotText: { fontSize: 10, fontWeight: '800', color: '#fff' },
 
   separator: { height: 1, backgroundColor: '#f1f5f9', marginLeft: 60 },
+
+  debugBtn: {
+    position: 'absolute',
+    bottom: 8,
+    alignSelf: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    backgroundColor: '#fee2e2',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+  },
+  debugBtnText: { fontSize: 12, fontWeight: '600', color: '#dc2626' },
 });
