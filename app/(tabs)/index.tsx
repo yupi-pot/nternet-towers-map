@@ -1,14 +1,16 @@
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Region } from 'react-native-maps';
 import ClusterMapView from 'react-native-map-clustering';
-import { Marker } from 'react-native-maps';
+import { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import TowerDetailModal from '@/src/components/TowerDetailModal';
@@ -23,6 +25,32 @@ const RADIO_SHORT: Record<CellTower['radio'], string> = {
   NR: '5G',
 };
 
+// ─── Glass panel — cross-platform ─────────────────────────────────────────────
+function Glass({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: object;
+}) {
+  if (Platform.OS === 'ios') {
+    return (
+      <BlurView
+        intensity={82}
+        tint="systemUltraThinMaterialLight"
+        style={[styles.glass, style]}
+      >
+        {children}
+      </BlurView>
+    );
+  }
+  // Android fallback
+  return (
+    <View style={[styles.glassAndroid, style]}>{children}</View>
+  );
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function MapTab() {
   const {
     towers,
@@ -35,7 +63,6 @@ export default function MapTab() {
     refreshCurrentRegion,
   } = useTowersContext();
 
-  // Network type filter
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const [mapFilters, setMapFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -63,9 +90,7 @@ export default function MapTab() {
   const handleRegionChangeComplete = useCallback(
     (region: Region) => {
       mapRegionRef.current = region;
-      if (userHasDraggedRef.current && firstFetchDoneRef.current) {
-        setHasPanned(true);
-      }
+      if (userHasDraggedRef.current && firstFetchDoneRef.current) setHasPanned(true);
     },
     [mapRegionRef],
   );
@@ -73,12 +98,7 @@ export default function MapTab() {
   const handleMyLocation = useCallback(() => {
     if (!location || !mapRef.current) return;
     mapRef.current.animateToRegion(
-      {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        latitudeDelta: 0.015,
-        longitudeDelta: 0.015,
-      },
+      { latitude: location.latitude, longitude: location.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 },
       500,
     );
   }, [location]);
@@ -86,11 +106,8 @@ export default function MapTab() {
   const toggleFilter = useCallback((radio: CellTower['radio']) => {
     setActiveFilters((prev) => {
       const next = new Set(prev);
-      if (next.has(radio)) {
-        if (next.size > 1) next.delete(radio);
-      } else {
-        next.add(radio);
-      }
+      if (next.has(radio)) { if (next.size > 1) next.delete(radio); }
+      else next.add(radio);
       if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
       filterTimerRef.current = setTimeout(() => setMapFilters(new Set(next)), 200);
       return next;
@@ -108,7 +125,7 @@ export default function MapTab() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Getting location…</Text>
+        <Text style={styles.centeredText}>Getting location…</Text>
       </View>
     );
   }
@@ -116,7 +133,7 @@ export default function MapTab() {
   if (locationError) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{locationError}</Text>
+        <Text style={[styles.centeredText, { color: '#ef4444' }]}>{locationError}</Text>
       </View>
     );
   }
@@ -135,7 +152,7 @@ export default function MapTab() {
         onRegionChangeComplete={handleRegionChangeComplete}
         onPanDrag={handlePanDrag}
         showsUserLocation
-        clusterColor="#3b82f6"
+        clusterColor="#1c1c1e"
         clusterTextColor="#fff"
         radius={40}
         animationEnabled={false}
@@ -152,65 +169,82 @@ export default function MapTab() {
         ))}
       </ClusterMapView>
 
-      {/* Top overlay: status + filters */}
+      {/* ── Top controls ── */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
-        <View style={styles.statusRow} pointerEvents="auto">
-          <View style={styles.statusChip}>
-            {towersLoading ? (
-              <ActivityIndicator size="small" color="#1e293b" />
-            ) : (
-              <Text style={styles.statusText}>
-                {towers.length > 0
-                  ? `${displayCount} towers`
-                  : (towersError ?? 'No towers found')}
-              </Text>
-            )}
-          </View>
-          <TouchableOpacity style={styles.iconBtn} onPress={handleRefresh}>
-            <Text style={styles.iconBtnText}>⟳</Text>
-          </TouchableOpacity>
-        </View>
 
-        <View style={styles.filterRow} pointerEvents="auto">
-          {ALL_RADIOS.map((radio) => (
-            <TouchableOpacity
-              key={radio}
-              style={[
-                styles.filterChip,
-                activeFilters.has(radio)
-                  ? { backgroundColor: RADIO_COLORS[radio], borderColor: RADIO_COLORS[radio] }
-                  : styles.filterChipInactive,
-              ]}
-              onPress={() => toggleFilter(radio)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  !activeFilters.has(radio) && styles.filterChipTextInactive,
-                ]}
-              >
-                {RADIO_SHORT[radio]}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {/* Unified glass bar */}
+        <View style={styles.barRow} pointerEvents="auto">
+          <Glass style={styles.statusBar}>
+            {/* Count / loading */}
+            <View style={styles.statusLeft}>
+              {towersLoading ? (
+                <ActivityIndicator size="small" color="#1c1c1e" />
+              ) : (
+                <Text style={styles.countText}>
+                  {towers.length > 0
+                    ? `${displayCount} towers`
+                    : (towersError ?? 'No towers')}
+                </Text>
+              )}
+            </View>
+
+            {/* Divider */}
+            <View style={styles.barDivider} />
+
+            {/* Filter chips */}
+            <View style={styles.chipRow}>
+              {ALL_RADIOS.map((radio) => {
+                const active = activeFilters.has(radio);
+                return (
+                  <TouchableOpacity
+                    key={radio}
+                    onPress={() => toggleFilter(radio)}
+                    style={[
+                      styles.chip,
+                      active
+                        ? { backgroundColor: RADIO_COLORS[radio] }
+                        : styles.chipInactive,
+                    ]}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.chipText, !active && styles.chipTextInactive]}>
+                      {RADIO_SHORT[radio]}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </Glass>
+
+          {/* Refresh button */}
+          <TouchableOpacity onPress={handleRefresh} activeOpacity={0.75}>
+            <Glass style={styles.iconBtn}>
+              <Ionicons name="refresh" size={17} color="#1c1c1e" />
+            </Glass>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
 
-      {/* Search this area */}
+      {/* ── Search this area ── */}
       {hasPanned && !towersLoading && (
-        <View style={styles.searchAreaWrap} pointerEvents="box-none">
-          <TouchableOpacity
-            style={styles.searchAreaBtn}
-            onPress={handleRefresh}
-          >
-            <Text style={styles.searchAreaText}>Search this area</Text>
+        <View style={styles.searchWrap} pointerEvents="box-none">
+          <TouchableOpacity onPress={handleRefresh} activeOpacity={0.8}>
+            <Glass style={styles.searchBtn}>
+              <Text style={styles.searchText}>Search this area</Text>
+            </Glass>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* My location */}
-      <TouchableOpacity style={styles.myLocationBtn} onPress={handleMyLocation}>
-        <Text style={styles.myLocationIcon}>⊙</Text>
+      {/* ── My location ── */}
+      <TouchableOpacity
+        style={styles.locationBtnWrap}
+        onPress={handleMyLocation}
+        activeOpacity={0.75}
+      >
+        <Glass style={styles.locationBtn}>
+          <Ionicons name="locate" size={19} color="#3b82f6" />
+        </Glass>
       </TouchableOpacity>
 
       <TowerDetailModal
@@ -223,119 +257,139 @@ export default function MapTab() {
   );
 }
 
+// ─── Shared glass shape ────────────────────────────────────────────────────────
+const GLASS_SHADOW = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.08,
+  shadowRadius: 12,
+  elevation: 4,
+};
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#f8fafc',
-  },
-  loadingText: { marginTop: 12, fontSize: 16, color: '#64748b' },
-  errorText: { fontSize: 16, color: '#ef4444', textAlign: 'center' },
 
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, backgroundColor: '#f8fafc' },
+  centeredText: { fontSize: 15, color: '#64748b' },
+
+  // ── Glass ──
+  glass: {
+    overflow: 'hidden',
+    borderRadius: 18,
+    ...GLASS_SHADOW,
+  },
+  glassAndroid: {
+    overflow: 'hidden',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    ...GLASS_SHADOW,
+  },
+
+  // ── Top overlay ──
   topOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    gap: 8,
+    paddingHorizontal: 12,
   },
-  statusRow: {
+
+  barRow: {
     flexDirection: 'row',
-    gap: 8,
     alignItems: 'center',
+    gap: 8,
     marginTop: 8,
   },
-  statusChip: {
+
+  // Main bar: count + divider + chips
+  statusBar: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 20,
-    paddingVertical: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
     paddingHorizontal: 14,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: 10,
   },
-  statusText: { color: '#1e293b', fontSize: 13, fontWeight: '600' },
-  iconBtn: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 20,
-    width: 38,
-    height: 38,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
+  statusLeft: {
+    minWidth: 80,
   },
-  iconBtnText: { color: '#1e293b', fontSize: 20 },
-
-  filterRow: { flexDirection: 'row', gap: 8 },
-  filterChip: {
-    borderRadius: 14,
+  countText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1c1c1e',
+    letterSpacing: -0.2,
+  },
+  barDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: 'rgba(0,0,0,0.12)',
+  },
+  chipRow: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 6,
+  },
+  chip: {
+    borderRadius: 8,
     paddingVertical: 5,
-    paddingHorizontal: 14,
-    borderWidth: 1.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  filterChipInactive: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderColor: '#cbd5e1',
+  chipInactive: {
+    backgroundColor: 'rgba(0,0,0,0.06)',
   },
-  filterChipText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  filterChipTextInactive: { color: '#64748b' },
+  chipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.2,
+  },
+  chipTextInactive: {
+    color: '#6b7280',
+  },
 
-  searchAreaWrap: {
+  // Refresh button
+  iconBtn: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Search this area
+  searchWrap: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'box-none',
   },
-  searchAreaBtn: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingVertical: 10,
+  searchBtn: {
+    paddingVertical: 11,
     paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 5,
   },
-  searchAreaText: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
+  searchText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1c1c1e',
+    letterSpacing: -0.1,
+  },
 
-  myLocationBtn: {
+  // My location
+  locationBtnWrap: {
     position: 'absolute',
-    bottom: 100,
-    right: 16,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
+    bottom: 108,
+    right: 14,
   },
-  myLocationIcon: { fontSize: 22, color: '#3b82f6' },
+  locationBtn: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
