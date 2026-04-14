@@ -1,12 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import {
-  Compass,
-  MapPin,
-  Radio,
-  ShieldCheck,
-} from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
@@ -36,9 +31,11 @@ const DIVIDER = '#e0d9d0';
 const ICON_SIZE = 72;
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
 interface Page {
   key: string;
-  Icon: React.FC<{ size: number; color: string; strokeWidth: number }>;
+  icon: IoniconsName;
   title: string;
   body: string;
   isPermission?: boolean;
@@ -47,25 +44,25 @@ interface Page {
 const PAGES: Page[] = [
   {
     key: 'discover',
-    Icon: Radio,
+    icon: 'radio-outline',
     title: 'Find any tower,\nanywhere.',
     body: 'Real tower locations using cross-referenced data — more accurate than FCC coverage maps.',
   },
   {
     key: 'accurate',
-    Icon: ShieldCheck,
+    icon: 'shield-checkmark-outline',
     title: 'Data you can\ntrust.',
     body: 'Every tower carries a confidence rating based on real-world measurements. No ghost towers, no guesses.',
   },
   {
     key: 'navigate',
-    Icon: Compass,
+    icon: 'compass-outline',
     title: 'Point your antenna\nexactly right.',
     body: 'Compass bearing tells you precisely which direction to face — essential for signal boosters and rural installs.',
   },
   {
     key: 'location',
-    Icon: MapPin,
+    icon: 'location-outline',
     title: 'One permission\nneeded.',
     body: 'We use your location to find towers nearby. We never store it or share it with anyone.',
     isPermission: true,
@@ -74,10 +71,10 @@ const PAGES: Page[] = [
 
 // ─── Animated icon ─────────────────────────────────────────────────────────────
 function PageIcon({
-  Icon,
+  icon,
   isActive,
 }: {
-  Icon: Page['Icon'];
+  icon: IoniconsName;
   isActive: boolean;
 }) {
   const scale = useSharedValue(0.65);
@@ -100,7 +97,7 @@ function PageIcon({
 
   return (
     <Animated.View style={[styles.iconWrap, style]}>
-      <Icon size={ICON_SIZE} color={ACCENT} strokeWidth={1.5} />
+      <Ionicons name={icon} size={ICON_SIZE} color={ACCENT} />
     </Animated.View>
   );
 }
@@ -117,7 +114,7 @@ function OnboardingPage({
     <View style={[styles.page, { width }]}>
       {/* Icon area */}
       <View style={styles.iconArea}>
-        <PageIcon Icon={page.Icon} isActive={isActive} />
+        <PageIcon icon={page.icon} isActive={isActive} />
       </View>
 
       {/* Divider */}
@@ -154,12 +151,20 @@ export default function OnboardingScreen() {
   const handleSkip = () => finish();
 
   const handleRequestLocation = async () => {
-    setRequesting(true);
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    setRequesting(false);
-    if (status === 'granted') {
-      setLocationGranted(true);
-      setTimeout(finish, 500);
+    try {
+      setRequesting(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setRequesting(false);
+      if (status === 'granted') {
+        setLocationGranted(true);
+        setTimeout(finish, 500);
+      } else {
+        // Permission denied — let user skip past it
+        finish();
+      }
+    } catch {
+      setRequesting(false);
+      finish();
     }
   };
 
