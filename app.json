@@ -53,8 +53,7 @@
           "locationWhenInUsePermission": "This app needs your location to show nearby cell towers."
         }
       ],
-      "expo-secure-store",
-      "expo-blur"
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
