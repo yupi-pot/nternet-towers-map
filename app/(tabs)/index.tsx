@@ -12,10 +12,7 @@ import { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import TowerDetailModal from '@/src/components/TowerDetailModal';
-import PaywallModal from '@/src/components/PaywallModal';
-import { usePremium } from '@/src/context/PremiumContext';
 import { useTowersContext } from '@/src/context/TowersContext';
-import { haversineDistance, FREE_TOWER_LIMIT } from '@/src/utils/towerUtils';
 import { CellTower, RADIO_COLORS, RADIO_LABELS } from '@/src/types';
 
 const ALL_RADIOS: CellTower['radio'][] = ['GSM', 'UMTS', 'LTE', 'NR'];
@@ -38,8 +35,6 @@ export default function MapTab() {
     refreshCurrentRegion,
   } = useTowersContext();
 
-  const { isPremium } = usePremium();
-
   // Network type filter
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const [mapFilters, setMapFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
@@ -47,7 +42,6 @@ export default function MapTab() {
 
   const [hasPanned, setHasPanned] = useState(false);
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
-  const [showPaywall, setShowPaywall] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
@@ -103,28 +97,12 @@ export default function MapTab() {
     });
   }, []);
 
-  // Apply network filter, then free-tier tower limit (nearest N towers)
-  const filteredTowers = useMemo(() => {
-    const byType = towers.filter((t) => mapFilters.has(t.radio));
-    if (isPremium || !location) return byType;
-    return byType
-      .map((t) => ({
-        t,
-        d: haversineDistance(location.latitude, location.longitude, t.lat, t.lon),
-      }))
-      .sort((a, b) => a.d - b.d)
-      .slice(0, FREE_TOWER_LIMIT)
-      .map(({ t }) => t);
-  }, [towers, mapFilters, isPremium, location]);
+  const filteredTowers = useMemo(
+    () => towers.filter((t) => mapFilters.has(t.radio)),
+    [towers, mapFilters],
+  );
 
-  const displayCount = useMemo(() => {
-    const byType = towers.filter((t) => activeFilters.has(t.radio));
-    if (isPremium || !location) return byType.length;
-    return Math.min(byType.length, FREE_TOWER_LIMIT);
-  }, [towers, activeFilters, isPremium, location]);
-
-  const totalCount = towers.filter((t) => activeFilters.has(t.radio)).length;
-  const isLimited = !isPremium && totalCount > FREE_TOWER_LIMIT;
+  const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
 
   if (locationLoading) {
     return (
@@ -177,23 +155,17 @@ export default function MapTab() {
       {/* Top overlay: status + filters */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
         <View style={styles.statusRow} pointerEvents="auto">
-          <TouchableOpacity
-            style={styles.statusChip}
-            onPress={isLimited ? () => setShowPaywall(true) : undefined}
-            activeOpacity={isLimited ? 0.7 : 1}
-          >
+          <View style={styles.statusChip}>
             {towersLoading ? (
               <ActivityIndicator size="small" color="#1e293b" />
             ) : (
               <Text style={styles.statusText}>
                 {towers.length > 0
-                  ? isLimited
-                    ? `${displayCount} of ${totalCount} towers · 👑 Unlock all`
-                    : `${displayCount} of ${totalCount} towers`
+                  ? `${displayCount} towers`
                   : (towersError ?? 'No towers found')}
               </Text>
             )}
-          </TouchableOpacity>
+          </View>
           <TouchableOpacity style={styles.iconBtn} onPress={handleRefresh}>
             <Text style={styles.iconBtnText}>⟳</Text>
           </TouchableOpacity>
@@ -246,12 +218,6 @@ export default function MapTab() {
         userLat={location?.latitude ?? null}
         userLon={location?.longitude ?? null}
         onClose={() => setSelectedTower(null)}
-      />
-
-      <PaywallModal
-        visible={showPaywall}
-        featureName="Unlimited towers"
-        onClose={() => setShowPaywall(false)}
       />
     </View>
   );

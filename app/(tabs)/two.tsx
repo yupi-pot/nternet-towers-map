@@ -9,9 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import PaywallModal from '@/src/components/PaywallModal';
 import TowerDetailModal from '@/src/components/TowerDetailModal';
-import { usePremium } from '@/src/context/PremiumContext';
 import { useTowersContext } from '@/src/context/TowersContext';
 import { getCarrierName } from '@/src/utils/carrierNames';
 import {
@@ -19,7 +17,6 @@ import {
   CONFIDENCE_LABEL,
   confidenceLevel,
   formatDistance,
-  FREE_TOWER_LIMIT,
   haversineDistance,
 } from '@/src/utils/towerUtils';
 import { CellTower, RADIO_COLORS } from '@/src/types';
@@ -80,13 +77,11 @@ const Separator = () => <View style={styles.separator} />;
 
 export default function ListTab() {
   const { towers, isLoading, error, location } = useTowersContext();
-  const { isPremium } = usePremium();
 
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mapFilters, setMapFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
-  const [showPaywall, setShowPaywall] = useState(false);
 
   const toggleFilter = (radio: CellTower['radio']) => {
     setActiveFilters((prev) => {
@@ -117,12 +112,10 @@ export default function ListTab() {
         .sort((a, b) => (a.dist ?? 0) - (b.dist ?? 0));
     }
 
-    if (!isPremium) return sorted.slice(0, FREE_TOWER_LIMIT);
     return sorted;
-  }, [towers, mapFilters, location, isPremium]);
+  }, [towers, mapFilters, location]);
 
   const totalFiltered = towers.filter((t) => activeFilters.has(t.radio)).length;
-  const isLimited = !isPremium && totalFiltered > FREE_TOWER_LIMIT;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -145,18 +138,11 @@ export default function ListTab() {
           </TouchableOpacity>
         ))}
 
-        <TouchableOpacity
-          style={styles.countLabel}
-          onPress={isLimited ? () => setShowPaywall(true) : undefined}
-        >
-          <Text style={[styles.countLabelText, isLimited && { color: '#f59e0b' }]}>
-            {isLoading
-              ? '…'
-              : isLimited
-              ? `${FREE_TOWER_LIMIT} of ${totalFiltered} · 👑`
-              : `${rows.length} towers`}
+        <View style={styles.countLabel}>
+          <Text style={styles.countLabelText}>
+            {isLoading ? '…' : `${totalFiltered} towers`}
           </Text>
-        </TouchableOpacity>
+        </View>
       </View>
 
       {/* Legend */}
@@ -193,17 +179,6 @@ export default function ListTab() {
             contentContainerStyle={styles.listContent}
           />
 
-          {isLimited && (
-            <TouchableOpacity
-              style={styles.unlockBanner}
-              onPress={() => setShowPaywall(true)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.unlockBannerText}>
-                👑 Unlock all {totalFiltered} towers with Premium
-              </Text>
-            </TouchableOpacity>
-          )}
         </>
       )}
 
@@ -212,12 +187,6 @@ export default function ListTab() {
         userLat={location?.latitude ?? null}
         userLon={location?.longitude ?? null}
         onClose={() => setSelectedTower(null)}
-      />
-
-      <PaywallModal
-        visible={showPaywall}
-        featureName="Unlimited towers"
-        onClose={() => setShowPaywall(false)}
       />
     </SafeAreaView>
   );
@@ -299,15 +268,4 @@ const styles = StyleSheet.create({
   confDotText: { fontSize: 10, fontWeight: '800', color: '#fff' },
 
   separator: { height: 1, backgroundColor: '#f1f5f9', marginLeft: 60 },
-
-  unlockBanner: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#1e293b',
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  unlockBannerText: { fontSize: 14, fontWeight: '700', color: '#fff' },
 });

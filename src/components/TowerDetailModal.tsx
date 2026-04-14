@@ -15,8 +15,6 @@ import {
   View,
 } from 'react-native';
 
-import { usePremium } from '@/src/context/PremiumContext';
-import PaywallModal from '@/src/components/PaywallModal';
 import { getCarrierName } from '@/src/utils/carrierNames';
 import {
   bearingTo,
@@ -40,9 +38,7 @@ interface Props {
 }
 
 export default function TowerDetailModal({ tower, userLat, userLon, onClose, onFlagInaccurate }: Props) {
-  const { isPremium } = usePremium();
   const deviceHeading = useCompass();
-  const [paywallFeature, setPaywallFeature] = useState<string | null>(null);
   const [flagged, setFlagged] = useState(false);
 
   if (!tower) return null;
@@ -69,10 +65,6 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
     Clipboard.setStringAsync(`${tower.lat.toFixed(6)}, ${tower.lon.toFixed(6)}`);
 
   const handleExport = async () => {
-    if (!isPremium) {
-      setPaywallFeature('Export');
-      return;
-    }
     const data = {
       cellid: tower.cellid,
       carrier,
@@ -101,11 +93,8 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
     Alert.alert('Thanks!', 'Your report helps improve tower accuracy for everyone.');
   };
 
-  const showCompass = isPremium;
-
   return (
-    <>
-      <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
         <Pressable style={styles.overlay} onPress={onClose}>
           <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
             {/* Handle */}
@@ -145,34 +134,21 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
                 <View style={styles.bearingDivider} />
                 <View style={styles.bearingItem}>
                   <Text style={styles.bearingLabel}>Direction</Text>
-                  {showCompass ? (
-                    <View style={styles.compassWrap}>
-                      <Text style={styles.bearingValue}>
-                        {formatBearing(towerBearing)}
+                  <View style={styles.compassWrap}>
+                    <Text style={styles.bearingValue}>
+                      {formatBearing(towerBearing)}
+                    </Text>
+                    {arrowRotation != null && (
+                      <Text
+                        style={[
+                          styles.compassArrow,
+                          { transform: [{ rotate: `${arrowRotation}deg` }] },
+                        ]}
+                      >
+                        ↑
                       </Text>
-                      {arrowRotation != null && (
-                        <Text
-                          style={[
-                            styles.compassArrow,
-                            { transform: [{ rotate: `${arrowRotation}deg` }] },
-                          ]}
-                        >
-                          ↑
-                        </Text>
-                      )}
-                    </View>
-                  ) : (
-                    <TouchableOpacity onPress={() => setPaywallFeature('Compass bearing')}>
-                      <View style={styles.premiumRow}>
-                        <Text style={styles.bearingValue}>
-                          {cardinalDirection(towerBearing)} · {Math.round(towerBearing)}°
-                        </Text>
-                        <View style={styles.lockBadge}>
-                          <Text style={styles.lockText}>PRO</Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  )}
+                    )}
+                  </View>
                 </View>
               </View>
             )}
@@ -211,21 +187,12 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
                 style={[styles.actionBtn, styles.actionBtnPrimary]}
                 onPress={handleExport}
               >
-                <Text style={styles.actionBtnTextPrimary}>
-                  {isPremium ? '↑ Export' : '👑 Export'}
-                </Text>
+                <Text style={styles.actionBtnTextPrimary}>↑ Export</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
         </Pressable>
       </Modal>
-
-      <PaywallModal
-        visible={paywallFeature != null}
-        featureName={paywallFeature ?? undefined}
-        onClose={() => setPaywallFeature(null)}
-      />
-    </>
   );
 }
 
