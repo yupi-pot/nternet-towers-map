@@ -6,13 +6,22 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SENTRY_DSN": "https://7788d642ea0b3bef1b93aea2b577b9c0@o363579.ingest.us.sentry.io/4511223662379008"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SENTRY_DSN": "https://7788d642ea0b3bef1b93aea2b577b9c0@o363579.ingest.us.sentry.io/4511223662379008"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SENTRY_DSN": "https://7788d642ea0b3bef1b93aea2b577b9c0@o363579.ingest.us.sentry.io/4511223662379008"
+      }
     }
   },
   "submit": {
