@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import * as Sentry from '@sentry/react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,38 +19,23 @@ import { CellTower, RADIO_COLORS, RADIO_LABELS } from '@/src/types';
 
 const ALL_RADIOS: CellTower['radio'][] = ['GSM', 'UMTS', 'LTE', 'NR'];
 const RADIO_SHORT: Record<CellTower['radio'], string> = {
-  GSM: '2G',
-  UMTS: '3G',
-  LTE: '4G',
-  NR: '5G',
+  GSM: '2G', UMTS: '3G', LTE: '4G', NR: '5G',
 };
 
-// ─── Glass panel — cross-platform ─────────────────────────────────────────────
-function Glass({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: object;
-}) {
-  if (Platform.OS === 'ios') {
-    return (
-      <BlurView
-        intensity={82}
-        tint="systemUltraThinMaterialLight"
-        style={[styles.glass, style]}
-      >
-        {children}
-      </BlurView>
-    );
-  }
-  // Android fallback
+function GlassView({ style, children }: { style?: object; children: React.ReactNode }) {
   return (
-    <View style={[styles.glassAndroid, style]}>{children}</View>
+    <View
+      style={[
+        styles.glass,
+        Platform.OS === 'android' ? styles.glassAndroid : styles.glassIOS,
+        style,
+      ]}
+    >
+      {children}
+    </View>
   );
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function MapTab() {
   const {
     towers,
@@ -63,19 +48,55 @@ export default function MapTab() {
     refreshCurrentRegion,
   } = useTowersContext();
 
+  // Chip state — null means "All"
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
-  const [mapFilters, setMapFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
+  const [mapFilters, setMapFilters]       = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [hasPanned, setHasPanned] = useState(false);
-  const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
+  const [hasPanned,      setHasPanned]      = useState(false);
+  const [selectedTower,  setSelectedTower]  = useState<CellTower | null>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapRef = useRef<any>(null);
-  const firstFetchDoneRef = useRef(false);
-  const userHasDraggedRef = useRef(false);
+  const mapRef              = useRef<any>(null);
+  const firstFetchDoneRef   = useRef(false);
+  const userHasDraggedRef   = useRef(false);
 
   if (towers.length > 0) firstFetchDoneRef.current = true;
+
+  const isAllActive = activeFilters.size === ALL_RADIOS.length;
+
+  const applyFilters = useCallback((next: Set<CellTower['radio']>) => {
+    setActiveFilters(next);
+    if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
+    filterTimerRef.current = setTimeout(() => setMapFilters(new Set(next)), 200);
+  }, []);
+
+  const handleAllChip = useCallback(() => {
+    applyFilters(new Set(ALL_RADIOS));
+  }, [applyFilters]);
+
+  const toggleFilter = useCallback((radio: CellTower['radio']) => {
+    setActiveFilters((prev) => {
+      const allActive = prev.size === ALL_RADIOS.length;
+      let next: Set<CellTower['radio']>;
+
+      if (allActive) {
+        // "All" → select only this one
+        next = new Set([radio]);
+      } else if (prev.has(radio) && prev.size === 1) {
+        // Last chip tapped again → reset to All
+        next = new Set(ALL_RADIOS);
+      } else {
+        next = new Set(prev);
+        if (next.has(radio)) next.delete(radio);
+        else next.add(radio);
+      }
+
+      if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
+      filterTimerRef.current = setTimeout(() => setMapFilters(new Set(next)), 200);
+      return next;
+    });
+  }, []);
 
   const handleRefresh = useCallback(() => {
     refreshCurrentRegion();
@@ -103,22 +124,10 @@ export default function MapTab() {
     );
   }, [location]);
 
-  const toggleFilter = useCallback((radio: CellTower['radio']) => {
-    setActiveFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(radio)) { if (next.size > 1) next.delete(radio); }
-      else next.add(radio);
-      if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
-      filterTimerRef.current = setTimeout(() => setMapFilters(new Set(next)), 200);
-      return next;
-    });
-  }, []);
-
   const filteredTowers = useMemo(
     () => towers.filter((t) => mapFilters.has(t.radio)),
     [towers, mapFilters],
   );
-
   const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
 
   if (locationLoading) {
@@ -129,7 +138,6 @@ export default function MapTab() {
       </View>
     );
   }
-
   if (locationError) {
     return (
       <View style={styles.centered}>
@@ -171,40 +179,40 @@ export default function MapTab() {
 
       {/* ── Top controls ── */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
-
-        {/* Unified glass bar */}
         <View style={styles.barRow} pointerEvents="auto">
-          <Glass style={styles.statusBar}>
-            {/* Count / loading */}
+
+          {/* Status + chips in one bar */}
+          <GlassView style={styles.statusBar}>
+            {/* Count */}
             <View style={styles.statusLeft}>
-              {towersLoading ? (
-                <ActivityIndicator size="small" color="#1c1c1e" />
-              ) : (
-                <Text style={styles.countText}>
-                  {towers.length > 0
-                    ? `${displayCount} towers`
-                    : (towersError ?? 'No towers')}
-                </Text>
-              )}
+              {towersLoading
+                ? <ActivityIndicator size="small" color="#1c1c1e" />
+                : <Text style={styles.countText}>
+                    {towers.length > 0 ? `${displayCount} towers` : (towersError ?? 'No towers')}
+                  </Text>
+              }
             </View>
 
-            {/* Divider */}
             <View style={styles.barDivider} />
 
-            {/* Filter chips */}
+            {/* Chips: All + 2G/3G/4G/5G */}
             <View style={styles.chipRow}>
+              {/* All chip */}
+              <TouchableOpacity
+                onPress={handleAllChip}
+                style={[styles.chip, isAllActive ? styles.chipAll : styles.chipInactive]}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.chipText, !isAllActive && styles.chipTextInactive]}>All</Text>
+              </TouchableOpacity>
+
               {ALL_RADIOS.map((radio) => {
-                const active = activeFilters.has(radio);
+                const active = !isAllActive && activeFilters.has(radio);
                 return (
                   <TouchableOpacity
                     key={radio}
                     onPress={() => toggleFilter(radio)}
-                    style={[
-                      styles.chip,
-                      active
-                        ? { backgroundColor: RADIO_COLORS[radio] }
-                        : styles.chipInactive,
-                    ]}
+                    style={[styles.chip, active ? { backgroundColor: RADIO_COLORS[radio] } : styles.chipInactive]}
                     activeOpacity={0.75}
                   >
                     <Text style={[styles.chipText, !active && styles.chipTextInactive]}>
@@ -214,13 +222,13 @@ export default function MapTab() {
                 );
               })}
             </View>
-          </Glass>
+          </GlassView>
 
-          {/* Refresh button */}
+          {/* Refresh */}
           <TouchableOpacity onPress={handleRefresh} activeOpacity={0.75}>
-            <Glass style={styles.iconBtn}>
+            <GlassView style={styles.iconBtn}>
               <Ionicons name="refresh" size={17} color="#1c1c1e" />
-            </Glass>
+            </GlassView>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -229,22 +237,31 @@ export default function MapTab() {
       {hasPanned && !towersLoading && (
         <View style={styles.searchWrap} pointerEvents="box-none">
           <TouchableOpacity onPress={handleRefresh} activeOpacity={0.8}>
-            <Glass style={styles.searchBtn}>
+            <GlassView style={styles.searchBtn}>
               <Text style={styles.searchText}>Search this area</Text>
-            </Glass>
+            </GlassView>
           </TouchableOpacity>
         </View>
       )}
 
+      {/* ── Sentry debug ── */}
+      {__DEV__ && (
+        <TouchableOpacity
+          style={styles.sentryDebugBtn}
+          onPress={() => { Sentry.captureException(new Error('Test error from cellr')); }}
+          activeOpacity={0.75}
+        >
+          <GlassView style={styles.iconBtn}>
+            <Ionicons name="bug" size={17} color="#ef4444" />
+          </GlassView>
+        </TouchableOpacity>
+      )}
+
       {/* ── My location ── */}
-      <TouchableOpacity
-        style={styles.locationBtnWrap}
-        onPress={handleMyLocation}
-        activeOpacity={0.75}
-      >
-        <Glass style={styles.locationBtn}>
+      <TouchableOpacity style={styles.locationBtnWrap} onPress={handleMyLocation} activeOpacity={0.75}>
+        <GlassView style={styles.iconBtn}>
           <Ionicons name="locate" size={19} color="#3b82f6" />
-        </Glass>
+        </GlassView>
       </TouchableOpacity>
 
       <TowerDetailModal
@@ -257,139 +274,55 @@ export default function MapTab() {
   );
 }
 
-// ─── Shared glass shape ────────────────────────────────────────────────────────
-const GLASS_SHADOW = {
+const SHADOW = {
   shadowColor: '#000',
   shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.08,
-  shadowRadius: 12,
+  shadowOpacity: 0.1,
+  shadowRadius: 10,
   elevation: 4,
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, backgroundColor: '#f8fafc' },
   centeredText: { fontSize: 15, color: '#64748b' },
 
-  // ── Glass ──
-  glass: {
-    overflow: 'hidden',
-    borderRadius: 18,
-    ...GLASS_SHADOW,
-  },
-  glassAndroid: {
-    overflow: 'hidden',
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    ...GLASS_SHADOW,
-  },
+  glass: { borderRadius: 18, overflow: 'hidden', ...SHADOW },
+  glassIOS: { backgroundColor: 'rgba(255,255,255,0.82)' },
+  glassAndroid: { backgroundColor: 'rgba(255,255,255,0.95)' },
 
-  // ── Top overlay ──
-  topOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 12,
-  },
+  topOverlay: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 12 },
+  barRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
 
-  barRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
-
-  // Main bar: count + divider + chips
   statusBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 13,
     gap: 10,
   },
-  statusLeft: {
-    minWidth: 80,
-  },
-  countText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1c1c1e',
-    letterSpacing: -0.2,
-  },
-  barDivider: {
-    width: 1,
-    height: 18,
-    backgroundColor: 'rgba(0,0,0,0.12)',
-  },
-  chipRow: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 6,
-  },
-  chip: {
-    borderRadius: 8,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipInactive: {
-    backgroundColor: 'rgba(0,0,0,0.06)',
-  },
-  chipText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#fff',
-    letterSpacing: 0.2,
-  },
-  chipTextInactive: {
-    color: '#6b7280',
-  },
+  statusLeft: { minWidth: 76 },
+  countText: { fontSize: 13, fontWeight: '700', color: '#1c1c1e', letterSpacing: -0.2 },
+  barDivider: { width: StyleSheet.hairlineWidth, height: 18, backgroundColor: 'rgba(0,0,0,0.2)' },
 
-  // Refresh button
-  iconBtn: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  chipRow: { flex: 1, flexDirection: 'row', gap: 5 },
+  chip: { borderRadius: 8, paddingVertical: 5, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
+  chipAll: { backgroundColor: '#1c1c1e' },
+  chipInactive: { backgroundColor: 'rgba(0,0,0,0.06)' },
+  chipText: { fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.1 },
+  chipTextInactive: { color: '#6b7280' },
 
-  // Search this area
+  iconBtn: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
+
   searchWrap: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    pointerEvents: 'box-none',
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center', justifyContent: 'center', pointerEvents: 'box-none',
   },
-  searchBtn: {
-    paddingVertical: 11,
-    paddingHorizontal: 20,
-  },
-  searchText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1c1c1e',
-    letterSpacing: -0.1,
-  },
+  searchBtn: { paddingVertical: 11, paddingHorizontal: 20 },
+  searchText: { fontSize: 14, fontWeight: '600', color: '#1c1c1e', letterSpacing: -0.1 },
 
-  // My location
-  locationBtnWrap: {
-    position: 'absolute',
-    bottom: 108,
-    right: 14,
-  },
-  locationBtn: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  locationBtnWrap: { position: 'absolute', bottom: 108, right: 14 },
+  sentryDebugBtn: { position: 'absolute', bottom: 160, right: 14 },
 });
