@@ -53,7 +53,8 @@
           "locationWhenInUsePermission": "This app needs your location to show nearby cell towers."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true

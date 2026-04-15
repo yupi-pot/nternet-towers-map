@@ -1,7 +1,8 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import * as Sentry from '@sentry/react-native';
 import { useFonts } from 'expo-font';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useNavigationContainerRef } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
@@ -18,9 +19,25 @@ export const unstable_settings = {
   initialRouteName: '(tabs)',
 };
 
+const routingInstrumentation = Sentry.reactNavigationIntegration();
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  integrations: [routingInstrumentation],
+  tracesSampleRate: 1.0,
+});
+
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+export default Sentry.wrap(function RootLayout() {
+  const ref = useNavigationContainerRef();
+
+  useEffect(() => {
+    if (ref?.current) {
+      routingInstrumentation.registerNavigationContainer(ref);
+    }
+  }, [ref]);
+
   const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
@@ -51,7 +68,7 @@ export default function RootLayout() {
   if (!fontsLoaded || !onboardingChecked) return null;
 
   return <RootLayoutNav needsOnboarding={needsOnboarding} />;
-}
+});
 
 function RootLayoutNav({ needsOnboarding }: { needsOnboarding: boolean }) {
   const colorScheme = useColorScheme();
