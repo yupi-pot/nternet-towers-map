@@ -169,7 +169,7 @@ export default function MapTab() {
           <Marker
             key={`${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`}
             coordinate={{ latitude: tower.lat, longitude: tower.lon }}
-            pinColor={RADIO_COLORS[tower.radio]}
+            pinColor={RADIO_COLORS[tower.radio] ?? '#8b5cf6'}
             onPress={() => setSelectedTower(tower)}
             title={RADIO_LABELS[tower.radio]}
             description={`Cell ID: ${tower.cellid}`}
