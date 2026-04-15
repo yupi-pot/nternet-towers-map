@@ -204,6 +204,7 @@ export default function MapTab() {
               <Marker
                 key={`cluster-${cluster_id}`}
                 coordinate={{ latitude: lat, longitude: lon }}
+                tracksViewChanges={false}
                 onPress={() => {
                   const zoom = supercluster.getClusterExpansionZoom(cluster_id);
                   const delta = 360 / Math.pow(2, zoom);
