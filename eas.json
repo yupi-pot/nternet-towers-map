@@ -9,21 +9,27 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_SENTRY_DSN": "https://7788d642ea0b3bef1b93aea2b577b9c0@o363579.ingest.us.sentry.io/4511223662379008",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_AUTH_TOKEN": "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",
+        "SENTRY_ORG": "dearjournal",
+        "SENTRY_PROJECT": "cellr"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_SENTRY_DSN": "https://7788d642ea0b3bef1b93aea2b577b9c0@o363579.ingest.us.sentry.io/4511223662379008",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_AUTH_TOKEN": "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",
+        "SENTRY_ORG": "dearjournal",
+        "SENTRY_PROJECT": "cellr"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_SENTRY_DSN": "https://7788d642ea0b3bef1b93aea2b577b9c0@o363579.ingest.us.sentry.io/4511223662379008",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_AUTH_TOKEN": "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",
+        "SENTRY_ORG": "dearjournal",
+        "SENTRY_PROJECT": "cellr"
       }
     }
   },
