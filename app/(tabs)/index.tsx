@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Sentry from '@sentry/react-native';
+import Supercluster from 'supercluster';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,8 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import ClusterMapView from 'react-native-map-clustering';
-import { Marker, Region } from 'react-native-maps';
+import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import TowerDetailModal from '@/src/components/TowerDetailModal';
@@ -21,6 +21,21 @@ const ALL_RADIOS: CellTower['radio'][] = ['GSM', 'UMTS', 'LTE', 'NR'];
 const RADIO_SHORT: Record<CellTower['radio'], string> = {
   GSM: '2G', UMTS: '3G', LTE: '4G', NR: '5G',
 };
+
+const supercluster = new Supercluster({ radius: 40, maxZoom: 16 });
+
+function regionToZoom(region: Region): number {
+  return Math.round(Math.log(360 / region.longitudeDelta) / Math.LN2);
+}
+
+function regionToBBox(region: Region): [number, number, number, number] {
+  return [
+    region.longitude - region.longitudeDelta / 2,
+    region.latitude - region.latitudeDelta / 2,
+    region.longitude + region.longitudeDelta / 2,
+    region.latitude + region.latitudeDelta / 2,
+  ];
+}
 
 function GlassView({ style, children }: { style?: object; children: React.ReactNode }) {
   return (
@@ -48,18 +63,18 @@ export default function MapTab() {
     refreshCurrentRegion,
   } = useTowersContext();
 
-  // Chip state — null means "All"
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const [mapFilters, setMapFilters]       = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [hasPanned,      setHasPanned]      = useState(false);
-  const [selectedTower,  setSelectedTower]  = useState<CellTower | null>(null);
+  const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
+  const [hasPanned,     setHasPanned]     = useState(false);
+  const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapRef              = useRef<any>(null);
-  const firstFetchDoneRef   = useRef(false);
-  const userHasDraggedRef   = useRef(false);
+  const mapRef            = useRef<any>(null);
+  const firstFetchDoneRef = useRef(false);
+  const userHasDraggedRef = useRef(false);
 
   if (towers.length > 0) firstFetchDoneRef.current = true;
 
@@ -79,19 +94,15 @@ export default function MapTab() {
     setActiveFilters((prev) => {
       const allActive = prev.size === ALL_RADIOS.length;
       let next: Set<CellTower['radio']>;
-
       if (allActive) {
-        // "All" → select only this one
         next = new Set([radio]);
       } else if (prev.has(radio) && prev.size === 1) {
-        // Last chip tapped again → reset to All
         next = new Set(ALL_RADIOS);
       } else {
         next = new Set(prev);
         if (next.has(radio)) next.delete(radio);
         else next.add(radio);
       }
-
       if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
       filterTimerRef.current = setTimeout(() => setMapFilters(new Set(next)), 200);
       return next;
@@ -111,6 +122,7 @@ export default function MapTab() {
   const handleRegionChangeComplete = useCallback(
     (region: Region) => {
       mapRegionRef.current = region;
+      setCurrentRegion(region);
       if (userHasDraggedRef.current && firstFetchDoneRef.current) setHasPanned(true);
     },
     [mapRegionRef],
@@ -124,10 +136,31 @@ export default function MapTab() {
     );
   }, [location]);
 
+  // Build supercluster index whenever filtered towers change
   const filteredTowers = useMemo(
     () => towers.filter((t) => mapFilters.has(t.radio)),
     [towers, mapFilters],
   );
+
+  const clusterPoints = useMemo<Supercluster.PointFeature<{ tower: CellTower }>[]>(
+    () => filteredTowers.map((tower) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [tower.lon, tower.lat] },
+      properties: { tower },
+    })),
+    [filteredTowers],
+  );
+
+  useMemo(() => {
+    supercluster.load(clusterPoints);
+  }, [clusterPoints]);
+
+  const clusters = useMemo(() => {
+    const region = currentRegion ?? mapRegionRef.current;
+    if (!region) return [];
+    return supercluster.getClusters(regionToBBox(region), regionToZoom(region));
+  }, [clusterPoints, currentRegion, mapRegionRef]);
+
   const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
 
   if (locationLoading) {
@@ -148,7 +181,7 @@ export default function MapTab() {
 
   return (
     <View style={styles.container}>
-      <ClusterMapView
+      <MapView
         ref={mapRef}
         style={styles.map}
         initialRegion={{
@@ -160,30 +193,51 @@ export default function MapTab() {
         onRegionChangeComplete={handleRegionChangeComplete}
         onPanDrag={handlePanDrag}
         showsUserLocation
-        clusterColor="#1c1c1e"
-        clusterTextColor="#fff"
-        radius={40}
-        animationEnabled={false}
       >
-        {filteredTowers.map((tower) => (
-          <Marker
-            key={`${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`}
-            coordinate={{ latitude: tower.lat, longitude: tower.lon }}
-            pinColor={RADIO_COLORS[tower.radio] ?? '#8b5cf6'}
-            onPress={() => setSelectedTower(tower)}
-            title={RADIO_LABELS[tower.radio]}
-            description={`Cell ID: ${tower.cellid}`}
-          />
-        ))}
-      </ClusterMapView>
+        {clusters.map((item) => {
+          const [lon, lat] = item.geometry.coordinates;
+          const isCluster = item.properties.cluster;
+
+          if (isCluster) {
+            const { cluster_id, point_count } = item.properties as Supercluster.ClusterProperties;
+            return (
+              <Marker
+                key={`cluster-${cluster_id}`}
+                coordinate={{ latitude: lat, longitude: lon }}
+                onPress={() => {
+                  const zoom = supercluster.getClusterExpansionZoom(cluster_id);
+                  const delta = 360 / Math.pow(2, zoom);
+                  mapRef.current?.animateToRegion(
+                    { latitude: lat, longitude: lon, latitudeDelta: delta, longitudeDelta: delta },
+                    300,
+                  );
+                }}
+              >
+                <View style={styles.cluster}>
+                  <Text style={styles.clusterText}>{point_count}</Text>
+                </View>
+              </Marker>
+            );
+          }
+
+          const { tower } = item.properties as { tower: CellTower };
+          return (
+            <Marker
+              key={`${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`}
+              coordinate={{ latitude: lat, longitude: lon }}
+              pinColor={RADIO_COLORS[tower.radio] ?? '#8b5cf6'}
+              onPress={() => setSelectedTower(tower)}
+              title={RADIO_LABELS[tower.radio]}
+              description={`Cell ID: ${tower.cellid}`}
+            />
+          );
+        })}
+      </MapView>
 
       {/* ── Top controls ── */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
         <View style={styles.barRow} pointerEvents="auto">
-
-          {/* Status + chips in one bar */}
           <GlassView style={styles.statusBar}>
-            {/* Count */}
             <View style={styles.statusLeft}>
               {towersLoading
                 ? <ActivityIndicator size="small" color="#1c1c1e" />
@@ -195,9 +249,7 @@ export default function MapTab() {
 
             <View style={styles.barDivider} />
 
-            {/* Chips: All + 2G/3G/4G/5G */}
             <View style={styles.chipRow}>
-              {/* All chip */}
               <TouchableOpacity
                 onPress={handleAllChip}
                 style={[styles.chip, isAllActive ? styles.chipAll : styles.chipInactive]}
@@ -224,7 +276,6 @@ export default function MapTab() {
             </View>
           </GlassView>
 
-          {/* Refresh */}
           <TouchableOpacity onPress={handleRefresh} activeOpacity={0.75}>
             <GlassView style={styles.iconBtn}>
               <Ionicons name="refresh" size={17} color="#1c1c1e" />
@@ -315,6 +366,14 @@ const styles = StyleSheet.create({
   chipTextInactive: { color: '#6b7280' },
 
   iconBtn: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
+
+  cluster: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#1c1c1e',
+    alignItems: 'center', justifyContent: 'center',
+    ...SHADOW,
+  },
+  clusterText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 
   searchWrap: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
