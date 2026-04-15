@@ -6,5 +6,6 @@
       "WebFetch(domain:www.opencellid.org)",
       "Bash(gh repo:*)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": ["sentry"]
 }
