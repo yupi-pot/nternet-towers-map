@@ -282,6 +282,7 @@ export default function MapTab() {
   const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
   const [coverageTower, setCoverageTower] = useState<CellTower | null>(null);
+  const [trackingMarkers, setTrackingMarkers] = useState(false);
   const [rippleItems, setRippleItems] = useState<RippleItem[]>([]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -307,6 +308,13 @@ export default function MapTab() {
       SecureStore.deleteItemAsync('hasSeenOnboarding').then(() => router.replace('/onboarding' as never));
     }
   }, [router]);
+
+  // Briefly enable tracksViewChanges on all markers so they repaint when coverage toggles
+  useEffect(() => {
+    setTrackingMarkers(true);
+    const t = setTimeout(() => setTrackingMarkers(false), 600);
+    return () => clearTimeout(t);
+  }, [coverageTower]);
 
   if (towers.length > 0) firstFetchDoneRef.current = true;
 
@@ -589,11 +597,15 @@ export default function MapTab() {
             <Marker
               key={`${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`}
               coordinate={{ latitude: lat, longitude: lon }}
-              tracksViewChanges={false}
+              tracksViewChanges={trackingMarkers}
               onPress={() => handleTowerPress(tower)}
               anchor={TOWER_MARKER_ANCHOR}
             >
-              <TowerMarker radio={tower.radio} cellid={tower.cellid} />
+              <TowerMarker
+                radio={tower.radio}
+                cellid={tower.cellid}
+                minimized={coverageTower !== null && tower.cellid !== coverageTower.cellid}
+              />
             </Marker>,
           ];
         })}

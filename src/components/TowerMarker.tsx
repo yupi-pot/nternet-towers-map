@@ -13,10 +13,16 @@ interface Props {
   radio: CellTower['radio'];
   cellid: number;
   isSelected?: boolean;
+  minimized?: boolean;
 }
 
-export const TowerMarker = React.memo(function TowerMarker({ radio }: Props) {
+export const TowerMarker = React.memo(function TowerMarker({ radio, minimized }: Props) {
   const color = RADIO_COLORS[radio] ?? '#8b5cf6';
+
+  if (minimized) {
+    return <View style={[styles.dot, { backgroundColor: color }]} />;
+  }
+
   return (
     <View style={[
       styles.pin,
@@ -43,6 +49,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.7,
     shadowRadius: 8,
     elevation: 5,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    opacity: 0.5,
   },
   label: {
     fontSize: 8,
