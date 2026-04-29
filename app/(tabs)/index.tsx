@@ -45,6 +45,25 @@ function jitter(seed: number): number {
   return (x - Math.floor(x) - 0.5) * 0.0006;
 }
 
+const ClusterMarker = React.memo(function ClusterMarker({
+  lat, lon, clusterId, pointCount, onPress,
+}: {
+  lat: number; lon: number; clusterId: number; pointCount: number;
+  onPress: () => void;
+}) {
+  return (
+    <Marker
+      coordinate={{ latitude: lat, longitude: lon }}
+      tracksViewChanges={false}
+      onPress={onPress}
+    >
+      <View collapsable={false} style={styles.cluster}>
+        <Text style={styles.clusterText}>{pointCount}</Text>
+      </View>
+    </Marker>
+  );
+});
+
 function GlassView({ style, children }: { style?: object; children: React.ReactNode }) {
   return (
     <View
@@ -217,10 +236,12 @@ export default function MapTab() {
           if (isCluster) {
             const { cluster_id, point_count } = item.properties as Supercluster.ClusterProperties;
             return (
-              <Marker
+              <ClusterMarker
                 key={`cluster-${cluster_id}`}
-                coordinate={{ latitude: lat, longitude: lon }}
-                tracksViewChanges={false}
+                lat={lat}
+                lon={lon}
+                clusterId={cluster_id}
+                pointCount={point_count}
                 onPress={() => {
                   const zoom = supercluster.getClusterExpansionZoom(cluster_id);
                   const delta = 360 / Math.pow(2, zoom);
@@ -229,11 +250,7 @@ export default function MapTab() {
                     300,
                   );
                 }}
-              >
-                <View style={styles.cluster}>
-                  <Text style={styles.clusterText}>{point_count}</Text>
-                </View>
-              </Marker>
+              />
             );
           }
 
