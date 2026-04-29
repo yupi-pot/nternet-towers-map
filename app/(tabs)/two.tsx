@@ -31,6 +31,9 @@ const ALL_RADIOS: CellTower['radio'][] = ['GSM', 'UMTS', 'LTE', 'NR'];
 const RADIO_SHORT: Record<CellTower['radio'], string> = {
   GSM: '2G', UMTS: '3G', LTE: '4G', NR: '5G',
 };
+const RADIO_LABEL: Record<CellTower['radio'], string> = {
+  GSM: '2G', UMTS: '3G', LTE: '4G LTE', NR: '5G NR',
+};
 
 // ─── Glass header (matches map tab) ──────────────────────────────────────────
 function GlassHeader({ children, paddingTop }: { children: React.ReactNode; paddingTop: number }) {
@@ -192,6 +195,12 @@ export default function ListTab() {
   }, [towers, mapFilters, location]);
 
   const totalFiltered = towers.filter((t) => activeFilters.has(t.radio)).length;
+
+  const radioCounts = useMemo(() => {
+    const c: Record<CellTower['radio'], number> = { GSM: 0, UMTS: 0, LTE: 0, NR: 0 };
+    towers.forEach((t) => c[t.radio]++);
+    return c;
+  }, [towers]);
   const nearest = rows[0] ?? null;
   const listRows = rows.slice(1);
 
@@ -221,28 +230,29 @@ export default function ListTab() {
         <View style={styles.filterRow}>
           {ALL_RADIOS.map((radio) => {
             const active = activeFilters.has(radio);
+            const color = RADIO_COLORS[radio];
             return (
               <TouchableOpacity
                 key={radio}
                 onPress={() => toggleFilter(radio)}
-                style={[styles.chip, active ? { backgroundColor: RADIO_COLORS[radio] } : styles.chipInactive]}
+                style={[
+                  styles.pill,
+                  active
+                    ? { backgroundColor: color + '18', borderWidth: 1, borderColor: color + 'AA' }
+                    : styles.pillInactive,
+                ]}
                 activeOpacity={0.75}
               >
-                <Text style={[styles.chipText, !active && styles.chipTextInactive]}>
-                  {RADIO_SHORT[radio]}
+                <View style={[styles.pillDot, { backgroundColor: active ? color : '#9ca3af' }]} />
+                <Text style={[styles.pillText, { color: active ? color : '#6b7280' }]}>
+                  {RADIO_LABEL[radio]}
+                </Text>
+                <Text style={[styles.pillCount, { color: active ? color + '99' : '#9ca3af' }]}>
+                  {radioCounts[radio]}
                 </Text>
               </TouchableOpacity>
             );
           })}
-
-          <View style={styles.legendInline}>
-            {(['high', 'medium', 'low'] as const).map((level) => (
-              <View key={level} style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: CONFIDENCE_COLOR[level] }]} />
-              </View>
-            ))}
-            <Text style={styles.legendHint}>confidence</Text>
-          </View>
         </View>
       </GlassHeader>
 
@@ -331,34 +341,27 @@ const styles = StyleSheet.create({
   countBadge: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#8e8e93',
+    color: '#3b82f6',
     marginTop: 4,
   },
   filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    flexWrap: 'nowrap',
+    flexWrap: 'wrap',
   },
-  chip: {
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipInactive: { backgroundColor: 'rgba(0,0,0,0.07)' },
-  chipText: { fontSize: 12, fontWeight: '700', color: '#fff', letterSpacing: 0.2 },
-  chipTextInactive: { color: '#6b7280' },
-  legendInline: {
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    marginLeft: 'auto',
+    borderRadius: 100,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    gap: 6,
   },
-  legendItem: { alignItems: 'center', justifyContent: 'center' },
-  legendDot: { width: 7, height: 7, borderRadius: 4 },
-  legendHint: { fontSize: 11, color: '#aeaeb2', marginLeft: 4, fontWeight: '500' },
+  pillInactive: { backgroundColor: 'rgba(0,0,0,0.05)' },
+  pillDot: { width: 6, height: 6, borderRadius: 3 },
+  pillText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.1 },
+  pillCount: { fontSize: 11, fontWeight: '500' },
 
   // ── Section labels ──
   sectionLabel: {

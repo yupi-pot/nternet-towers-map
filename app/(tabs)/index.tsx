@@ -32,8 +32,8 @@ import { CellTower, RADIO_COLORS } from '@/src/types';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ALL_RADIOS: CellTower['radio'][] = ['GSM', 'UMTS', 'LTE', 'NR'];
-const RADIO_SHORT: Record<CellTower['radio'], string> = {
-  GSM: '2G', UMTS: '3G', LTE: '4G', NR: '5G',
+const RADIO_LABEL: Record<CellTower['radio'], string> = {
+  GSM: '2G', UMTS: '3G', LTE: '4G LTE', NR: '5G NR',
 };
 
 const MIN_ZOOM     = 9;   // below this: skip markers, show overlay
@@ -370,6 +370,11 @@ export default function MapTab() {
   }, [clusters, currentRegion, mapLayout]);
 
   const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
+  const radioCounts = useMemo(() => {
+    const c: Record<CellTower['radio'], number> = { GSM: 0, UMTS: 0, LTE: 0, NR: 0 };
+    towers.forEach((t) => c[t.radio]++);
+    return c;
+  }, [towers]);
   const zoom = currentRegion ? regionToZoom(currentRegion) : MIN_ZOOM;
   const tooZoomedOut   = zoom < MIN_ZOOM;
   const tooManyMarkers = !tooZoomedOut && clusters.length > MAX_MARKERS;
@@ -502,15 +507,25 @@ export default function MapTab() {
               </TouchableOpacity>
               {ALL_RADIOS.map((radio) => {
                 const active = !isAllActive && activeFilters.has(radio);
+                const color = RADIO_COLORS[radio];
                 return (
                   <TouchableOpacity
                     key={radio}
                     onPress={() => toggleFilter(radio)}
-                    style={[styles.chip, active ? { backgroundColor: RADIO_COLORS[radio] } : styles.chipInactive]}
+                    style={[
+                      styles.pill,
+                      active
+                        ? { backgroundColor: color + '18', borderWidth: 1, borderColor: color + 'AA' }
+                        : styles.pillInactive,
+                    ]}
                     activeOpacity={0.75}
                   >
-                    <Text style={[styles.chipText, !active && styles.chipTextInactive]}>
-                      {RADIO_SHORT[radio]}
+                    <View style={[styles.pillDot, { backgroundColor: active ? color : '#9ca3af' }]} />
+                    <Text style={[styles.pillText, { color: active ? color : '#6b7280' }]}>
+                      {RADIO_LABEL[radio]}
+                    </Text>
+                    <Text style={[styles.pillCount, { color: active ? color + '99' : '#9ca3af' }]}>
+                      {radioCounts[radio]}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -614,12 +629,25 @@ const styles = StyleSheet.create({
   countText: { fontSize: 13, fontWeight: '700', color: '#1c1c1e', letterSpacing: -0.2 },
   barDivider: { width: StyleSheet.hairlineWidth, height: 18, backgroundColor: 'rgba(0,0,0,0.2)' },
 
-  chipRow: { flex: 1, flexDirection: 'row', gap: 5 },
+  chipRow: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5, alignItems: 'center' },
   chip: { borderRadius: 8, paddingVertical: 5, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
   chipAll: { backgroundColor: '#1c1c1e' },
   chipInactive: { backgroundColor: 'rgba(0,0,0,0.06)' },
   chipText: { fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.1 },
   chipTextInactive: { color: '#6b7280' },
+
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 100,
+    paddingVertical: 6,
+    paddingHorizontal: 11,
+    gap: 5,
+  },
+  pillInactive: { backgroundColor: 'rgba(0,0,0,0.05)' },
+  pillDot: { width: 5, height: 5, borderRadius: 3 },
+  pillText: { fontSize: 11, fontWeight: '600', letterSpacing: 0.1 },
+  pillCount: { fontSize: 10, fontWeight: '500' },
 
   iconBtn: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
 
