@@ -417,7 +417,7 @@ export default function MapTab() {
               const { tower } = item.properties as { tower: CellTower };
               if (!tower) return null;
               const cfg = RIPPLE_CONFIG[tower.radio];
-              return { id: `t${tower.cellid}`, x: pos.x, y: pos.y, color: RADIO_COLORS[tower.radio], ...cfg, staggerMs: (tower.cellid % 8) * 300 } as RippleItem;
+              return { id: `t${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`, x: pos.x, y: pos.y, color: RADIO_COLORS[tower.radio], ...cfg, staggerMs: (tower.cellid % 8) * 300 } as RippleItem;
             }
           } catch {
             return null;
