@@ -512,6 +512,7 @@ export default function MapTab() {
           latitudeDelta: 0.015,
           longitudeDelta: 0.015,
         }}
+        userInterfaceStyle="light"
         onRegionChangeComplete={handleRegionChangeComplete}
         onPanDrag={handlePanDrag}
         onPress={() => {
