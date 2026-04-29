@@ -1,11 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { router } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import React, { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Platform,
   StyleSheet,
@@ -271,26 +268,6 @@ export default function ListTab() {
         onClose={() => setSelectedTower(null)}
       />
 
-      {__DEV__ && (
-        <TouchableOpacity
-          style={[styles.debugBtn, { bottom: insets.bottom + 90 }]}
-          onPress={() =>
-            Alert.alert('Reset Onboarding', 'Show onboarding flow again?', [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Reset & Show Now',
-                style: 'destructive',
-                onPress: async () => {
-                  await SecureStore.deleteItemAsync('hasSeenOnboarding');
-                  router.replace('/onboarding' as never);
-                },
-              },
-            ])
-          }
-        >
-          <Text style={styles.debugBtnText}>⚙ Reset Onboarding</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -469,18 +446,4 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, padding: 32 },
   emptyTitle: { fontSize: 17, fontWeight: '600', color: '#3c3c43', textAlign: 'center' },
   emptyHint: { fontSize: 14, color: '#aeaeb2', textAlign: 'center', lineHeight: 20 },
-
-  // ── Debug ──
-  debugBtn: {
-    position: 'absolute',
-    alignSelf: 'center',
-    zIndex: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    backgroundColor: '#fee2e2',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#fca5a5',
-  },
-  debugBtnText: { fontSize: 12, fontWeight: '600', color: '#dc2626' },
 });
