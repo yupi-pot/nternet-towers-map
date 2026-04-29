@@ -13,7 +13,7 @@ const DataSourceContext = createContext<DataSourceContextValue>({
 });
 
 export function DataSourceProvider({ children }: { children: React.ReactNode }) {
-  const [dataSource, setDataSource] = useState<DataSource>('opencellid');
+  const [dataSource, setDataSource] = useState<DataSource>('supabase');
   return (
     <DataSourceContext.Provider value={{ dataSource, setDataSource }}>
       {children}

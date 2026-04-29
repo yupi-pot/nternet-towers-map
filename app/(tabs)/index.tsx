@@ -266,10 +266,9 @@ function AnimatedCount({ value, textStyle }: { value: number; textStyle: object 
 
 export default function MapTab() {
   const {
-    towers, isLoading: towersLoading, error: towersError,
+    towers,
     location, locationLoading, locationError,
     mapRegionRef, refreshCurrentRegion,
-    dataSource, setDataSource,
   } = useTowersContext();
 
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
@@ -277,7 +276,6 @@ export default function MapTab() {
   const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
-  const [hasPanned,     setHasPanned]     = useState(false);
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
   const [markerPositions, setMarkerPositions] = useState<Record<string, { x: number; y: number }>>({});
 
@@ -319,12 +317,6 @@ export default function MapTab() {
     });
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    refreshCurrentRegion();
-    setHasPanned(false);
-    userHasDraggedRef.current = false;
-  }, [refreshCurrentRegion]);
-
   const handlePanDrag = useCallback(() => {
     userHasDraggedRef.current = true;
     if (!isPanningRef.current) {
@@ -337,10 +329,12 @@ export default function MapTab() {
   const handleRegionChangeComplete = useCallback((region: Region) => {
     mapRegionRef.current = region;
     setCurrentRegion(region);
-    if (userHasDraggedRef.current && firstFetchDoneRef.current) setHasPanned(true);
     isPanningRef.current = false;
     setIsPanning(false);
-  }, [mapRegionRef]);
+    if (userHasDraggedRef.current && firstFetchDoneRef.current) {
+      refreshCurrentRegion();
+    }
+  }, [mapRegionRef, refreshCurrentRegion]);
 
   const handleMyLocation = useCallback(() => {
     if (!location || !mapRef.current) return;
@@ -619,17 +613,6 @@ export default function MapTab() {
         </View>
       </SafeAreaView>
 
-      {/* ── Search this area ── */}
-      {hasPanned && !towersLoading && (
-        <View style={styles.searchWrap} pointerEvents="box-none">
-          <TouchableOpacity onPress={handleRefresh} activeOpacity={0.8}>
-            <GlassView style={styles.searchBtn}>
-              <Text style={styles.searchText}>Search this area</Text>
-            </GlassView>
-          </TouchableOpacity>
-        </View>
-      )}
-
       {/* ── Sentry debug ── */}
       {__DEV__ && (
         <TouchableOpacity
@@ -639,21 +622,6 @@ export default function MapTab() {
         >
           <GlassView style={styles.iconBtn}>
             <Ionicons name="bug" size={17} color="#ef4444" />
-          </GlassView>
-        </TouchableOpacity>
-      )}
-
-      {/* ── Data source switcher (debug) ── */}
-      {__DEV__ && (
-        <TouchableOpacity
-          style={styles.dataSourceBtn}
-          onPress={() => setDataSource(dataSource === 'opencellid' ? 'supabase' : 'opencellid')}
-          activeOpacity={0.75}
-        >
-          <GlassView style={[styles.dataSourcePill, dataSource === 'supabase' && styles.dataSourcePillActive]}>
-            <Text style={[styles.dataSourceText, dataSource === 'supabase' && styles.dataSourceTextActive]}>
-              {dataSource === 'supabase' ? 'SB' : 'OC'}
-            </Text>
           </GlassView>
         </TouchableOpacity>
       )}
@@ -743,21 +711,9 @@ const styles = StyleSheet.create({
     width: RIPPLE_BASE, height: RIPPLE_BASE, borderRadius: RIPPLE_BASE / 2, borderWidth: 1.5,
   },
 
-  searchWrap: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    alignItems: 'center', justifyContent: 'center', pointerEvents: 'box-none',
-  },
-  searchBtn: { paddingVertical: 11, paddingHorizontal: 20 },
-  searchText: { fontSize: 14, fontWeight: '600', color: '#1c1c1e', letterSpacing: -0.1 },
-
   zoomWarning: { position: 'absolute', bottom: 160, left: 0, right: 0, alignItems: 'center' },
   zoomWarningText: { fontSize: 13, fontWeight: '600', color: '#1c1c1e', paddingVertical: 9, paddingHorizontal: 18 },
 
   locationBtnWrap: { position: 'absolute', bottom: 108, right: 14 },
   sentryDebugBtn:  { position: 'absolute', bottom: 160, right: 14 },
-  dataSourceBtn:   { position: 'absolute', bottom: 212, right: 14 },
-  dataSourcePill:  { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 18 },
-  dataSourcePillActive: { backgroundColor: 'rgba(34,197,94,0.15)' },
-  dataSourceText:  { fontSize: 11, fontWeight: '800', color: '#6b7280', letterSpacing: 0.3 },
-  dataSourceTextActive: { color: '#16a34a' },
 });

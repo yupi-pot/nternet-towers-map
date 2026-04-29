@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { CellTower } from '../types';
-import { fetchTowers, ViewportBBox } from '../api/opencellid';
+import { ViewportBBox } from '../api/opencellid';
+// import { fetchTowers } from '../api/opencellid'; // kept for reference, not used
 import { fetchTowersFromSupabase } from '../api/supabase';
 import { DataSource } from '../context/DataSourceContext';
 
@@ -14,7 +15,7 @@ interface UseTowersResult {
 export function useTowers(
   bbox: ViewportBBox | null,
   fetchKey: number,
-  dataSource: DataSource = 'opencellid'
+  _dataSource: DataSource = 'supabase'
 ): UseTowersResult {
   const [towers, setTowers] = useState<CellTower[]>([]);
   const [fetchedBBox, setFetchedBBox] = useState<ViewportBBox | null>(null);
@@ -38,8 +39,10 @@ export function useTowers(
 
     timerRef.current = setTimeout(async () => {
       const bboxArg = { minLat, maxLat, minLon, maxLon };
-      const fetcher =
-        dataSource === 'supabase' ? fetchTowersFromSupabase : fetchTowers;
+
+      // Always use Supabase. OpenCelliD path preserved in ../api/opencellid.ts.
+      // const fetcher = _dataSource === 'supabase' ? fetchTowersFromSupabase : fetchTowers;
+      const fetcher = fetchTowersFromSupabase;
 
       try {
         const { towers: result, fetchedBBox: resultBBox } = await fetcher(bboxArg);
@@ -64,7 +67,7 @@ export function useTowers(
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [minLat, maxLat, minLon, maxLon, fetchKey, dataSource]);
+  }, [minLat, maxLat, minLon, maxLon, fetchKey]);
 
   return { towers, fetchedBBox, isLoading, error };
 }
