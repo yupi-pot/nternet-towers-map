@@ -5,9 +5,6 @@ const SUPABASE_URL = 'https://nykisarixoohwxqbxdnz.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55a2lzYXJpeG9vaHd4cWJ4ZG56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjQyNzksImV4cCI6MjA5MzA0MDI3OX0.YN5vRzHACGAP5l_lTO5ezxrXAEIn65F6YOBp42BYgTo';
 
-const MAX_RANGE_M = 50_000;
-const ROW_LIMIT = 2000;
-
 interface SupabaseRow {
   radio: string;
   mcc: number;
@@ -44,36 +41,25 @@ function rowToTower(row: SupabaseRow): CellTower {
 export async function fetchTowersFromSupabase(
   bbox: ViewportBBox
 ): Promise<{ towers: CellTower[]; fetchedBBox: ViewportBBox }> {
-  const params = new URLSearchParams({
-    'lat': `gte.${bbox.minLat}`,
-    'lat': `lte.${bbox.maxLat}`,
-    'lon': `gte.${bbox.minLon}`,
-    'lon': `lte.${bbox.maxLon}`,
-    'select': 'radio,mcc,net,area,cell,lon,lat,range,samples,avg_signal',
-    'limit': String(ROW_LIMIT),
-  });
-
-  // URLSearchParams deduplicates keys — build query string manually for multi-filter
-  const query = [
-    `lat=gte.${bbox.minLat}`,
-    `lat=lte.${bbox.maxLat}`,
-    `lon=gte.${bbox.minLon}`,
-    `lon=lte.${bbox.maxLon}`,
-    `range=lte.${MAX_RANGE_M}`,
-    `select=radio,mcc,net,area,cell,lon,lat,range,samples,avg_signal`,
-    `limit=${ROW_LIMIT}`,
-  ].join('&');
-
   try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/cell_towers?${query}`, {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/towers_in_bbox`, {
+      method: 'POST',
       headers: {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        min_lat: bbox.minLat,
+        max_lat: bbox.maxLat,
+        min_lon: bbox.minLon,
+        max_lon: bbox.maxLon,
+      }),
     });
 
     if (!resp.ok) {
-      console.error('[Supabase] HTTP', resp.status);
+      const body = await resp.text().catch(() => '');
+      console.error('[Supabase] HTTP', resp.status, body);
       return { towers: [], fetchedBBox: bbox };
     }
 
