@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Sentry from '@sentry/react-native';
 import Supercluster from 'supercluster';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -10,12 +10,20 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapErrorBoundary } from '@/src/components/MapErrorBoundary';
 import TowerDetailModal from '@/src/components/TowerDetailModal';
-import { AnimatedTowerMarker, TowerMarker } from '@/src/components/TowerMarker';
+import { TowerMarker } from '@/src/components/TowerMarker';
 import { useTowersContext } from '@/src/context/TowersContext';
 import { CellTower, RADIO_COLORS, RADIO_LABELS } from '@/src/types';
 
@@ -69,6 +77,36 @@ const ClusterMarker = React.memo(function ClusterMarker({
   );
 });
 
+// Renders ripple rings as a map overlay (sibling to MapView, not inside Marker).
+// This lets Reanimated run freely without touching Marker props or Fabric state.
+const SelectedTowerRipple = React.memo(function SelectedTowerRipple({
+  x, y, color,
+}: { x: number; y: number; color: string }) {
+  const scale1   = useSharedValue(0.4);
+  const opacity1 = useSharedValue(0.7);
+  const scale2   = useSharedValue(0.4);
+  const opacity2 = useSharedValue(0.7);
+
+  useEffect(() => {
+    const cfg = { duration: 2400, easing: Easing.out(Easing.ease) };
+    scale1.value   = withRepeat(withTiming(1.8, cfg), -1, false);
+    opacity1.value = withRepeat(withTiming(0, cfg), -1, false);
+    scale2.value   = withDelay(900, withRepeat(withTiming(1.8, cfg), -1, false));
+    opacity2.value = withDelay(900, withRepeat(withTiming(0, cfg), -1, false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const ring1 = useAnimatedStyle(() => ({ transform: [{ scale: scale1.value }], opacity: opacity1.value }));
+  const ring2 = useAnimatedStyle(() => ({ transform: [{ scale: scale2.value }], opacity: opacity2.value }));
+
+  return (
+    <View style={[styles.rippleWrap, { left: x - 22, top: y - 22 }]} pointerEvents="none">
+      <Animated.View style={[styles.rippleRing, { borderColor: color }, ring1]} />
+      <Animated.View style={[styles.rippleRing, { borderColor: color }, ring2]} />
+    </View>
+  );
+});
+
 function GlassView({ style, children }: { style?: object; children: React.ReactNode }) {
   return (
     <View
@@ -104,6 +142,7 @@ export default function MapTab() {
   const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
   const [hasPanned,     setHasPanned]     = useState(false);
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
+  const [ripplePoint,   setRipplePoint]   = useState<{ x: number; y: number } | null>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef            = useRef<any>(null);
@@ -169,6 +208,24 @@ export default function MapTab() {
       500,
     );
   }, [location]);
+
+  // Recompute ripple position whenever the selected tower or visible region changes.
+  // pointForCoordinate is async — we get a screen point and use it to position
+  // the ripple overlay. This runs outside Marker/Fabric, so animations are free.
+  useEffect(() => {
+    if (!selectedTower || !mapRef.current) {
+      setRipplePoint(null);
+      return;
+    }
+    let cancelled = false;
+    mapRef.current
+      .pointForCoordinate({ latitude: selectedTower.lat, longitude: selectedTower.lon })
+      .then((pt: { x: number; y: number }) => {
+        if (!cancelled) setRipplePoint(pt);
+      })
+      .catch(() => { /* map not yet ready */ });
+    return () => { cancelled = true; };
+  }, [selectedTower, currentRegion]);
 
   // Build supercluster index whenever filtered towers change
   const filteredTowers = useMemo(
@@ -295,6 +352,15 @@ export default function MapTab() {
           ];
         })}
       </MapView>
+
+      {/* ── Selected tower ripple (rendered outside MapView to avoid Fabric mutations) ── */}
+      {ripplePoint && selectedTower && (
+        <SelectedTowerRipple
+          x={ripplePoint.x}
+          y={ripplePoint.y}
+          color={RADIO_COLORS[selectedTower.radio] ?? '#8b5cf6'}
+        />
+      )}
 
       {/* ── Zoom / density overlay ── */}
       {(tooZoomedOut || tooManyMarkers) && (
@@ -476,6 +542,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   zoomWarningText: { fontSize: 13, fontWeight: '600', color: '#1c1c1e', paddingVertical: 9, paddingHorizontal: 18 },
+
+  rippleWrap: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  rippleRing: { position: 'absolute', width: 44, height: 44, borderRadius: 22, borderWidth: 1.5 },
 
   locationBtnWrap: { position: 'absolute', bottom: 108, right: 14 },
   sentryDebugBtn: { position: 'absolute', bottom: 160, right: 14 },
