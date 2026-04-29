@@ -292,6 +292,8 @@ export default function MapTab() {
   const mapRef            = useRef<any>(null);
   const firstFetchDoneRef = useRef(false);
   const userHasDraggedRef = useRef(false);
+  const isPanningRef      = useRef(false);
+  const [isPanning, setIsPanning] = useState(false);
 
   if (towers.length > 0) firstFetchDoneRef.current = true;
 
@@ -330,7 +332,13 @@ export default function MapTab() {
     userHasDraggedRef.current = false;
   }, [refreshCurrentRegion]);
 
-  const handlePanDrag   = useCallback(() => { userHasDraggedRef.current = true; }, []);
+  const handlePanDrag = useCallback(() => {
+    userHasDraggedRef.current = true;
+    if (!isPanningRef.current) {
+      isPanningRef.current = true;
+      setIsPanning(true);
+    }
+  }, []);
   const handleMapLayout = useCallback((e: LayoutChangeEvent) => {
     setMapLayout(e.nativeEvent.layout);
   }, []);
@@ -339,6 +347,8 @@ export default function MapTab() {
     mapRegionRef.current = region;
     setCurrentRegion(region);
     if (userHasDraggedRef.current && firstFetchDoneRef.current) setHasPanned(true);
+    isPanningRef.current = false;
+    setIsPanning(false);
   }, [mapRegionRef]);
 
   const handleMyLocation = useCallback(() => {
@@ -377,7 +387,7 @@ export default function MapTab() {
   // Compute ripple overlay items for ALL visible individual towers and clusters.
   // Uses synchronous linear approximation for lat/lon → screen pixels (accurate at city zoom).
   const rippleItems = useMemo<RippleItem[]>(() => {
-    if (!currentRegion || !mapLayout.width) return [];
+    if (isPanning || !currentRegion || !mapLayout.width) return [];
     const zoom = regionToZoom(currentRegion);
     if (zoom < MIN_ZOOM || clusters.length > MAX_MARKERS) return [];
 
@@ -404,7 +414,7 @@ export default function MapTab() {
       }
     }
     return items;
-  }, [clusters, currentRegion, mapLayout]);
+  }, [isPanning, clusters, currentRegion, mapLayout]);
 
   const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
   const radioCounts = useMemo(() => {
