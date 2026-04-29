@@ -18,6 +18,8 @@ export default function CoverageOverlay({ tower }: { tower: CellTower }) {
   const coverage = useTowerCoverage(tower);
   const color = RADIO_COLORS[tower.radio];
 
+  console.log('[CoverageOverlay] render — tower:', tower.cellid, 'coverage:', coverage ? `ready=${coverage.ready} rings=${coverage.rings.length}` : 'null');
+
   if (!coverage) return null;
 
   // Loading state: simple concentric circles as placeholder

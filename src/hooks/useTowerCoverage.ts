@@ -90,9 +90,12 @@ export function useTowerCoverage(tower: CellTower | null): CoverageData | null {
     activeId.current = id;
 
     const radius = getCoverageRadius(tower);
+    console.log('[Coverage] tower tapped:', id, 'radius:', radius, 'm');
+
     const fullDists = new Array(NUM_ANGLES).fill(radius);
 
     // Show simple circles immediately while terrain loads
+    console.log('[Coverage] setting fallback circles, ready=false');
     setData({
       rings: RING_FRACS.map((f) => ({
         coordinates: buildPolygon(tower.lat, tower.lon, fullDists.map((d) => d * f)),
@@ -116,9 +119,14 @@ export function useTowerCoverage(tower: CellTower | null): CoverageData | null {
       }
     }
 
+    console.log('[Coverage] fetching elevation for', queryLocs.length, 'points...');
     fetchElevations(queryLocs)
       .then((elevs) => {
-        if (activeId.current !== id) return;
+        console.log('[Coverage] elevation fetch OK, samples:', elevs.length, 'tower elev:', elevs[0]);
+        if (activeId.current !== id) {
+          console.log('[Coverage] stale response, ignoring');
+          return;
+        }
 
         const towerElev = elevs[0];
         const grid: { elevation: number; distM: number }[][] =
@@ -147,6 +155,7 @@ export function useTowerCoverage(tower: CellTower | null): CoverageData | null {
           return maxDist;
         });
 
+        console.log('[Coverage] viewshed done. sample maxDists (first 5):', maxDists.slice(0, 5));
         setData({
           rings: RING_FRACS.map((f) => ({
             coordinates: buildPolygon(
@@ -159,7 +168,8 @@ export function useTowerCoverage(tower: CellTower | null): CoverageData | null {
           ready: true,
         });
       })
-      .catch(() => {
+      .catch((err) => {
+        console.log('[Coverage] elevation fetch FAILED:', err?.message ?? err);
         if (activeId.current !== id) return;
         // Terrain fetch failed — promote simple circles to "ready" so they stay
         setData((prev) => (prev ? { ...prev, ready: true } : null));
