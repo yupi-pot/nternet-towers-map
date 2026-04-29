@@ -522,6 +522,9 @@ export default function MapTab() {
         })}
       </MapView>
 
+      {/* ── Saturation tint overlay ── */}
+      <View style={styles.saturationOverlay} pointerEvents="none" />
+
       {/* ── Ripple overlay for ALL towers + clusters (sibling to MapView, free to animate) ── */}
       {rippleItems.map((item) => (
         <SingleRipple key={item.id} {...item} />
@@ -663,6 +666,10 @@ const SHADOW = {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
+  saturationOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 150, 0, 0.10)',
+  },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, backgroundColor: '#f8fafc' },
   centeredText: { fontSize: 15, color: '#64748b' },
 
