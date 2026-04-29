@@ -365,6 +365,7 @@ export default function MapTab() {
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const pos = await (mapRef.current as any).pointForCoordinate({ latitude: lat, longitude: lon });
+          if (!pos || !isFinite(pos.x) || !isFinite(pos.y)) return null;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const isCluster = (item.properties as any).cluster;
           if (isCluster) {
