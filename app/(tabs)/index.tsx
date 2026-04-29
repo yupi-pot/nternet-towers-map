@@ -278,19 +278,19 @@ export default function MapTab() {
 
           const { tower } = item.properties as { tower: CellTower };
           if (!tower) return [];
-          const isSelected = selectedTower?.cellid === tower.cellid;
           return [
             <Marker
               key={`${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`}
               coordinate={{ latitude: lat, longitude: lon }}
-              tracksViewChanges={isSelected}
+              tracksViewChanges={false}
               onPress={() => setSelectedTower(tower)}
               anchor={{ x: 0.5, y: 0.5 }}
             >
-              {isSelected
-                ? <AnimatedTowerMarker radio={tower.radio} cellid={tower.cellid} />
-                : <TowerMarker radio={tower.radio} cellid={tower.cellid} />
-              }
+              <TowerMarker
+                radio={tower.radio}
+                cellid={tower.cellid}
+                isSelected={selectedTower?.cellid === tower.cellid}
+              />
             </Marker>,
           ];
         })}

@@ -1,13 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withDelay,
-  Easing,
-} from 'react-native-reanimated';
 
 import { CellTower, RADIO_COLORS } from '@/src/types';
 
@@ -18,87 +10,44 @@ const RADIO_SHORT: Record<CellTower['radio'], string> = {
 interface Props {
   radio: CellTower['radio'];
   cellid: number;
+  isSelected?: boolean;
 }
 
-export const TowerMarker = React.memo(function TowerMarker({ radio, cellid }: Props) {
+// Single stable component — no conditional component swapping inside <Marker>.
+// With Fabric (New Architecture), swapping child component types or toggling
+// tracksViewChanges triggers TelemetryController::pullTransaction crashes.
+// Keep this component fully stable after initial mount.
+export const TowerMarker = React.memo(function TowerMarker({ radio, cellid, isSelected }: Props) {
   const color = RADIO_COLORS[radio] ?? '#8b5cf6';
-  const label = `${RADIO_SHORT[radio]} · ${String(cellid).slice(-4)}`;
+  const label = `${RADIO_SHORT[radio] ?? String(radio)} · ${String(cellid).slice(-4)}`;
 
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.pin, { borderColor: color }, Platform.OS === 'ios' && { shadowColor: color }]}>
-        <View style={[styles.dot, { backgroundColor: color }]} />
-      </View>
-      <View style={styles.tag}>
-        <Text style={styles.tagText}>{label}</Text>
-      </View>
-    </View>
-  );
-});
-
-export const AnimatedTowerMarker = React.memo(function AnimatedTowerMarker({ radio, cellid }: Props) {
-  const color = RADIO_COLORS[radio] ?? '#8b5cf6';
-  const label = `${RADIO_SHORT[radio]} · ${String(cellid).slice(-4)}`;
-
-  const scale1 = useSharedValue(0.4);
-  const opacity1 = useSharedValue(0.7);
-  const scale2 = useSharedValue(0.4);
-  const opacity2 = useSharedValue(0.7);
-
-  useEffect(() => {
-    const cfg = { duration: 2400, easing: Easing.out(Easing.ease) };
-    scale1.value = withRepeat(withTiming(1.8, cfg), -1, false);
-    opacity1.value = withRepeat(withTiming(0, cfg), -1, false);
-    scale2.value = withDelay(900, withRepeat(withTiming(1.8, cfg), -1, false));
-    opacity2.value = withDelay(900, withRepeat(withTiming(0, cfg), -1, false));
-  }, []);
-
-  const ring1Style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale1.value }],
-    opacity: opacity1.value,
-  }));
-
-  const ring2Style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale2.value }],
-    opacity: opacity2.value,
-  }));
-
-  return (
-    <View style={styles.wrapper}>
-      {/* Ripple rings */}
-      <Animated.View style={[styles.ripple, { borderColor: color }, ring1Style]} />
-      <Animated.View style={[styles.ripple, { borderColor: color }, ring2Style]} />
-
-      {/* Pin */}
       <View style={[
         styles.pin,
-        styles.pinSelected,
         { borderColor: color },
+        isSelected && styles.pinSelected,
         Platform.OS === 'ios' && { shadowColor: color },
       ]}>
         <View style={[styles.dot, { backgroundColor: color }]} />
       </View>
-
-      <View style={[styles.tag, styles.tagSelected, { borderColor: color + '55' }]}>
+      <View style={[styles.tag, isSelected && { borderColor: color + '55' }]}>
         <Text style={styles.tagText}>{label}</Text>
       </View>
     </View>
   );
 });
+
+// Keep export so existing imports don't break, but it's now the same component.
+// Do NOT use Reanimated shared values inside a Marker child on Fabric — the
+// animation is invisible (tracksViewChanges=false means native ignores updates)
+// and the shared value worklets race with Fabric commits.
+export const AnimatedTowerMarker = TowerMarker;
 
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
     width: 72,
-  },
-
-  ripple: {
-    position: 'absolute',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    top: -12,
   },
 
   pin: {
@@ -115,6 +64,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   pinSelected: {
+    borderWidth: 3,
     shadowOpacity: 0.9,
     shadowRadius: 10,
     elevation: 6,
@@ -134,9 +84,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(5,5,5,0.72)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.14)',
-  },
-  tagSelected: {
-    borderWidth: 1,
   },
   tagText: {
     color: '#e5e5e5',
