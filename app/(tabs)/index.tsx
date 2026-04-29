@@ -511,7 +511,7 @@ export default function MapTab() {
         }}
         onRegionChangeComplete={handleRegionChangeComplete}
         onPanDrag={handlePanDrag}
-        onPress={() => { setSelectedTower(null); setCoverageTower(null); }}
+        onPress={() => { if (!selectedTower) { setCoverageTower(null); } }}
         showsUserLocation
       >
         {coverageTower && <CoverageOverlay tower={coverageTower} />}
@@ -663,6 +663,7 @@ export default function MapTab() {
         userLat={location.latitude}
         userLon={location.longitude}
         onClose={() => setSelectedTower(null)}
+        onDismissAll={() => { setSelectedTower(null); setCoverageTower(null); }}
       />
 
     </View>

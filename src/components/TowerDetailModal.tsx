@@ -7,6 +7,8 @@ import * as Sharing from 'expo-sharing';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  Modal,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -38,12 +40,14 @@ interface Props {
   tower: CellTower | null;
   userLat: number | null;
   userLon: number | null;
-  /** Closes only the sheet — coverage stays on map */
+  /** X button — closes sheet only, coverage stays on map */
   onClose: () => void;
+  /** Tap outside the card — closes sheet AND coverage */
+  onDismissAll: () => void;
   onFlagInaccurate?: (tower: CellTower) => void;
 }
 
-export default function TowerDetailModal({ tower, userLat, userLon, onClose, onFlagInaccurate }: Props) {
+export default function TowerDetailModal({ tower, userLat, userLon, onClose, onDismissAll, onFlagInaccurate }: Props) {
   const insets = useSafeAreaInsets();
   const deviceHeading = useCompass();
   const [flagged, setFlagged] = useState(false);
@@ -57,6 +61,7 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tower]);
 
+  // X button: slide card out, then call onClose (keeps coverage)
   const handleClose = useCallback(() => {
     cardTranslateY.value = withTiming(
       500,
@@ -64,6 +69,15 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
       (finished) => { if (finished) runOnJS(onClose)(); },
     );
   }, [onClose, cardTranslateY]);
+
+  // Tap outside card: slide card out, then call onDismissAll (clears coverage too)
+  const handleDismissAll = useCallback(() => {
+    cardTranslateY.value = withTiming(
+      500,
+      { duration: 250, easing: Easing.in(Easing.quad) },
+      (finished) => { if (finished) runOnJS(onDismissAll)(); },
+    );
+  }, [onDismissAll, cardTranslateY]);
 
   const cardAnimStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: cardTranslateY.value }],
@@ -115,93 +129,98 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
   };
 
   return (
-    // Container sits at the bottom — only covers the card area, map above is fully interactive
-    <View style={styles.container} pointerEvents="box-none">
-      <Animated.View style={[styles.card, { paddingBottom: 28 + insets.bottom }, cardAnimStyle]}>
-        {/* Handle */}
-        <View style={styles.handleWrap}>
-          <View style={styles.handle} />
-        </View>
-
-        {/* Network badge + carrier + close */}
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <View style={[styles.networkBadge, { backgroundColor: RADIO_COLORS[tower.radio] }]}>
-              <Text style={styles.networkBadgeText}>{RADIO_LABELS[tower.radio]}</Text>
-            </View>
-            <Text style={styles.carrierName}>{carrier}</Text>
+    // Transparent Modal: renders above the MapView native layer on all platforms.
+    // The overlay has no background — the map + coverage are visible through it.
+    // Tapping the area above the card calls onDismissAll; X button calls onClose.
+    <Modal visible transparent animationType="none" onRequestClose={handleDismissAll}>
+      <View style={styles.overlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleDismissAll} />
+        <Animated.View style={[styles.card, { paddingBottom: 28 + insets.bottom }, cardAnimStyle]}>
+          {/* Handle */}
+          <View style={styles.handleWrap}>
+            <View style={styles.handle} />
           </View>
 
-          <View style={[styles.confBadge, { borderColor: CONFIDENCE_COLOR[conf] }]}>
-            <View style={[styles.confDot, { backgroundColor: CONFIDENCE_COLOR[conf] }]} />
-            <Text style={[styles.confText, { color: CONFIDENCE_COLOR[conf] }]}>
-              {CONFIDENCE_LABEL[conf]}
-            </Text>
+          {/* Network badge + carrier + close */}
+          <View style={styles.header}>
+            <View style={{ flex: 1 }}>
+              <View style={[styles.networkBadge, { backgroundColor: RADIO_COLORS[tower.radio] }]}>
+                <Text style={styles.networkBadgeText}>{RADIO_LABELS[tower.radio]}</Text>
+              </View>
+              <Text style={styles.carrierName}>{carrier}</Text>
+            </View>
+
+            <View style={[styles.confBadge, { borderColor: CONFIDENCE_COLOR[conf] }]}>
+              <View style={[styles.confDot, { backgroundColor: CONFIDENCE_COLOR[conf] }]} />
+              <Text style={[styles.confText, { color: CONFIDENCE_COLOR[conf] }]}>
+                {CONFIDENCE_LABEL[conf]}
+              </Text>
+            </View>
+
+            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+              <Text style={styles.closeBtnText}>✕</Text>
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-            <Text style={styles.closeBtnText}>✕</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Distance + bearing */}
-        {hasLocation && distance != null && towerBearing != null && (
-          <View style={styles.bearingRow}>
-            <View style={styles.bearingItem}>
-              <Text style={styles.bearingLabel}>Distance</Text>
-              <Text style={styles.bearingValue}>{formatDistance(distance)}</Text>
-            </View>
-            <View style={styles.bearingDivider} />
-            <View style={styles.bearingItem}>
-              <Text style={styles.bearingLabel}>Direction</Text>
-              <View style={styles.compassWrap}>
-                <Text style={styles.bearingValue}>{formatBearing(towerBearing)}</Text>
-                {arrowRotation != null && (
-                  <Text style={[styles.compassArrow, { transform: [{ rotate: `${arrowRotation}deg` }] }]}>
-                    ↑
-                  </Text>
-                )}
+          {/* Distance + bearing */}
+          {hasLocation && distance != null && towerBearing != null && (
+            <View style={styles.bearingRow}>
+              <View style={styles.bearingItem}>
+                <Text style={styles.bearingLabel}>Distance</Text>
+                <Text style={styles.bearingValue}>{formatDistance(distance)}</Text>
+              </View>
+              <View style={styles.bearingDivider} />
+              <View style={styles.bearingItem}>
+                <Text style={styles.bearingLabel}>Direction</Text>
+                <View style={styles.compassWrap}>
+                  <Text style={styles.bearingValue}>{formatBearing(towerBearing)}</Text>
+                  {arrowRotation != null && (
+                    <Text style={[styles.compassArrow, { transform: [{ rotate: `${arrowRotation}deg` }] }]}>
+                      ↑
+                    </Text>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
-        )}
-
-        {/* Detail rows */}
-        <View style={styles.details}>
-          <InfoRow label="Cell ID" value={String(tower.cellid)} />
-          <InfoRow label="MCC / MNC" value={`${tower.mcc} / ${tower.mnc}`} />
-          <InfoRow label="LAC" value={String(tower.lac)} />
-          <TouchableOpacity onPress={handleCopyCoords}>
-            <InfoRow
-              label="Coordinates"
-              value={`${tower.lat.toFixed(5)}, ${tower.lon.toFixed(5)}`}
-              action="Copy"
-            />
-          </TouchableOpacity>
-          <InfoRow label="Coverage radius" value={`~${tower.range.toLocaleString()} m`} />
-          <InfoRow label="Measurements" value={`${tower.samples.toLocaleString()}`} />
-          {tower.averageSignalStrength !== 0 && (
-            <InfoRow label="Avg signal" value={`${tower.averageSignalStrength} dBm`} />
           )}
-        </View>
 
-        {/* Action buttons */}
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.actionBtn, flagged && styles.actionBtnDisabled]}
-            onPress={handleFlag}
-          >
-            <Text style={[styles.actionBtnText, flagged && styles.actionBtnTextDisabled]}>
-              {flagged ? 'Reported' : '⚑ Flag inaccurate'}
-            </Text>
-          </TouchableOpacity>
+          {/* Detail rows */}
+          <View style={styles.details}>
+            <InfoRow label="Cell ID" value={String(tower.cellid)} />
+            <InfoRow label="MCC / MNC" value={`${tower.mcc} / ${tower.mnc}`} />
+            <InfoRow label="LAC" value={String(tower.lac)} />
+            <TouchableOpacity onPress={handleCopyCoords}>
+              <InfoRow
+                label="Coordinates"
+                value={`${tower.lat.toFixed(5)}, ${tower.lon.toFixed(5)}`}
+                action="Copy"
+              />
+            </TouchableOpacity>
+            <InfoRow label="Coverage radius" value={`~${tower.range.toLocaleString()} m`} />
+            <InfoRow label="Measurements" value={`${tower.samples.toLocaleString()}`} />
+            {tower.averageSignalStrength !== 0 && (
+              <InfoRow label="Avg signal" value={`${tower.averageSignalStrength} dBm`} />
+            )}
+          </View>
 
-          <TouchableOpacity style={[styles.actionBtn, styles.actionBtnPrimary]} onPress={handleExport}>
-            <Text style={styles.actionBtnTextPrimary}>↑ Export</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    </View>
+          {/* Action buttons */}
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.actionBtn, flagged && styles.actionBtnDisabled]}
+              onPress={handleFlag}
+            >
+              <Text style={[styles.actionBtnText, flagged && styles.actionBtnTextDisabled]}>
+                {flagged ? 'Reported' : '⚑ Flag inaccurate'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.actionBtn, styles.actionBtnPrimary]} onPress={handleExport}>
+              <Text style={styles.actionBtnTextPrimary}>↑ Export</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
@@ -218,11 +237,10 @@ function InfoRow({ label, value, action }: { label: string; value: string; actio
 }
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  overlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-end',
   },
   card: {
     backgroundColor: '#fff',

@@ -54,10 +54,14 @@
         }
       ],
       "expo-secure-store",
-      ["@sentry/react-native", {
-        "organization": "dearjournal",
-        "project": "cellr"
-      }]
+      [
+        "@sentry/react-native",
+        {
+          "organization": "dearjournal",
+          "project": "cellr"
+        }
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true

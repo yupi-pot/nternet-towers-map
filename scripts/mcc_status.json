@@ -271,11 +271,15 @@
   },
   "308": {
     "country": "Saint Pierre and Miquelon",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "316": {
     "country": "United States (Ligado)",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "330": {
     "country": "Puerto Rico",
@@ -299,7 +303,9 @@
   },
   "344": {
     "country": "Antigua and Barbuda",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "346": {
     "country": "Cayman Islands",
@@ -307,27 +313,39 @@
   },
   "348": {
     "country": "British Virgin Islands",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "350": {
     "country": "Bermuda",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "352": {
     "country": "Grenada",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "354": {
     "country": "Montserrat",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "356": {
     "country": "Saint Kitts and Nevis",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "358": {
     "country": "Saint Lucia",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "360": {
     "country": "Saint Vincent and the Grenadines",
@@ -347,7 +365,9 @@
   },
   "365": {
     "country": "Anguilla",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "366": {
     "country": "Dominica",
@@ -387,11 +407,15 @@
   },
   "404": {
     "country": "India",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "405": {
     "country": "India",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "410": {
     "country": "Pakistan",
@@ -467,11 +491,15 @@
   },
   "430": {
     "country": "UAE (du)",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "431": {
     "country": "UAE (Virgin)",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "432": {
     "country": "Iran",
@@ -519,7 +547,9 @@
   },
   "467": {
     "country": "North Korea",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "470": {
     "country": "Bangladesh",
@@ -571,7 +601,9 @@
   },
   "541": {
     "country": "Vanuatu",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "546": {
     "country": "New Caledonia",
@@ -583,11 +615,15 @@
   },
   "549": {
     "country": "Cook Islands",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "550": {
     "country": "Micronesia",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "602": {
     "country": "Egypt",
@@ -687,7 +723,9 @@
   },
   "626": {
     "country": "Sao Tome and Principe",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "627": {
     "country": "Equatorial Guinea",
@@ -715,7 +753,9 @@
   },
   "633": {
     "country": "Seychelles",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "634": {
     "country": "Sudan",
@@ -787,7 +827,9 @@
   },
   "654": {
     "country": "Comoros",
-    "status": "pending"
+    "status": "no_data",
+    "date": "2026-04-29",
+    "source": "full_dump"
   },
   "655": {
     "country": "South Africa",
