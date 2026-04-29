@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
@@ -18,9 +19,9 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const BG = '#f6f2ed';
@@ -33,35 +34,53 @@ const ICON_SIZE = 72;
 // ─── Pages ────────────────────────────────────────────────────────────────────
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
-interface Page {
+interface VideoPage {
+  key: 'intro';
+  type: 'video';
+  title: string;
+}
+
+interface IconPage {
   key: string;
+  type: 'icon';
   icon: IoniconsName;
   title: string;
   body: string;
   isPermission?: boolean;
 }
 
+type Page = VideoPage | IconPage;
+
 const PAGES: Page[] = [
   {
+    key: 'intro',
+    type: 'video',
+    title: 'Cell Tower Map',
+  },
+  {
     key: 'discover',
+    type: 'icon',
     icon: 'radio-outline',
     title: 'Find any tower,\nanywhere.',
     body: 'Real tower locations using cross-referenced data — more accurate than FCC coverage maps.',
   },
   {
     key: 'accurate',
+    type: 'icon',
     icon: 'shield-checkmark-outline',
     title: 'Data you can\ntrust.',
     body: 'Every tower carries a confidence rating based on real-world measurements. No ghost towers, no guesses.',
   },
   {
     key: 'navigate',
+    type: 'icon',
     icon: 'compass-outline',
     title: 'Point your antenna\nexactly right.',
     body: 'Compass bearing tells you precisely which direction to face — essential for signal boosters and rural installs.',
   },
   {
     key: 'location',
+    type: 'icon',
     icon: 'location-outline',
     title: 'One permission\nneeded.',
     body: 'We use your location to find towers nearby. We never store it or share it with anyone.',
@@ -69,14 +88,44 @@ const PAGES: Page[] = [
   },
 ];
 
+// ─── Video slide ───────────────────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const VIDEO_SOURCE = require('../assets/cellr_Veo 3.1 Image to Video_2026-04-29_17-41-16.mov');
+
+function VideoSlide({ isActive, title }: { isActive: boolean; title: string }) {
+  const player = useVideoPlayer(VIDEO_SOURCE, (p) => {
+    p.loop = true;
+    p.muted = true;
+  });
+
+  useEffect(() => {
+    if (isActive) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [isActive, player]);
+
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={[styles.videoSlide, { width }]}>
+      <VideoView
+        player={player}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        nativeControls={false}
+      />
+      {/* Dark gradient overlay at bottom */}
+      <View style={[styles.videoOverlay, { paddingBottom: insets.bottom + 100 }]}>
+        <Text style={styles.videoTitle}>{title}</Text>
+      </View>
+    </View>
+  );
+}
+
 // ─── Animated icon ─────────────────────────────────────────────────────────────
-function PageIcon({
-  icon,
-  isActive,
-}: {
-  icon: IoniconsName;
-  isActive: boolean;
-}) {
+function PageIcon({ icon, isActive }: { icon: IoniconsName; isActive: boolean }) {
   const scale = useSharedValue(0.65);
   const opacity = useSharedValue(0);
 
@@ -102,25 +151,14 @@ function PageIcon({
   );
 }
 
-// ─── Single page ──────────────────────────────────────────────────────────────
-function OnboardingPage({
-  page,
-  isActive,
-}: {
-  page: Page;
-  isActive: boolean;
-}) {
+// ─── Icon slide ───────────────────────────────────────────────────────────────
+function IconSlide({ page, isActive }: { page: IconPage; isActive: boolean }) {
   return (
     <View style={[styles.page, { width }]}>
-      {/* Icon area */}
       <View style={styles.iconArea}>
         <PageIcon icon={page.icon} isActive={isActive} />
       </View>
-
-      {/* Divider */}
       <View style={styles.divider} />
-
-      {/* Text area */}
       <View style={styles.textArea}>
         <Text style={styles.title}>{page.title}</Text>
         <Text style={styles.body}>{page.body}</Text>
@@ -135,8 +173,10 @@ export default function OnboardingScreen() {
   const [locationGranted, setLocationGranted] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const insets = useSafeAreaInsets();
 
   const isLast = currentIndex === PAGES.length - 1;
+  const isVideoSlide = currentIndex === 0;
 
   const finish = useCallback(async () => {
     await SecureStore.setItemAsync('hasSeenOnboarding', 'true');
@@ -159,7 +199,6 @@ export default function OnboardingScreen() {
         setLocationGranted(true);
         setTimeout(finish, 500);
       } else {
-        // Permission denied — let user skip past it
         finish();
       }
     } catch {
@@ -183,7 +222,7 @@ export default function OnboardingScreen() {
   const currentPage = PAGES[currentIndex];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Slides */}
       <FlatList
         ref={flatListRef}
@@ -195,69 +234,122 @@ export default function OnboardingScreen() {
         scrollEnabled={!isLast || !locationGranted}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        renderItem={({ item, index }) => (
-          <OnboardingPage page={item} isActive={index === currentIndex} />
-        )}
+        renderItem={({ item, index }) =>
+          item.type === 'video' ? (
+            <VideoSlide isActive={index === currentIndex} title={item.title} />
+          ) : (
+            <IconSlide page={item} isActive={index === currentIndex} />
+          )
+        }
       />
 
-      {/* Bottom controls */}
-      <View style={styles.bottom}>
-        {/* Dots */}
-        <View style={styles.dots}>
-          {PAGES.map((_, i) => (
-            <View
-              key={i}
-              style={[styles.dot, i === currentIndex ? styles.dotActive : styles.dotInactive]}
-            />
-          ))}
-        </View>
+      {/* Bottom controls — hidden on video slide (tap to advance) */}
+      {isVideoSlide ? (
+        <TouchableOpacity
+          style={[styles.videoTapArea, { bottom: insets.bottom + 32 }]}
+          onPress={handleNext}
+          activeOpacity={0.8}
+        >
+          <View style={styles.videoNextBtn}>
+            <Text style={styles.videoNextText}>Get Started →</Text>
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <View style={[styles.bottom, { paddingBottom: insets.bottom + 12 }]}>
+          {/* Dots */}
+          <View style={styles.dots}>
+            {PAGES.map((_, i) => (
+              <View
+                key={i}
+                style={[styles.dot, i === currentIndex ? styles.dotActive : styles.dotInactive]}
+              />
+            ))}
+          </View>
 
-        {/* Buttons */}
-        <View style={styles.btnRow}>
-          {/* Skip — hidden on last page */}
-          {!isLast ? (
-            <TouchableOpacity style={styles.skipBtn} onPress={handleSkip} activeOpacity={0.7}>
-              <Text style={styles.skipText}>Skip</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.skipBtn} />
-          )}
-
-          {/* Next / Done / Location */}
-          {isLast ? (
-            locationGranted ? (
-              <TouchableOpacity style={styles.nextBtn} onPress={finish} activeOpacity={0.7}>
-                <Text style={[styles.nextText, { color: '#22c55e' }]}>Done ✓</Text>
+          {/* Buttons */}
+          <View style={styles.btnRow}>
+            {!isLast ? (
+              <TouchableOpacity style={styles.skipBtn} onPress={handleSkip} activeOpacity={0.7}>
+                <Text style={styles.skipText}>Skip</Text>
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity
-                style={styles.nextBtn}
-                onPress={handleRequestLocation}
-                disabled={requesting}
-                activeOpacity={0.7}
-              >
+              <View style={styles.skipBtn} />
+            )}
+
+            {isLast ? (
+              locationGranted ? (
+                <TouchableOpacity style={styles.nextBtn} onPress={finish} activeOpacity={0.7}>
+                  <Text style={[styles.nextText, { color: '#22c55e' }]}>Done ✓</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.nextBtn}
+                  onPress={handleRequestLocation}
+                  disabled={requesting}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.nextText}>
+                    {requesting ? 'Requesting…' : 'Allow Location →'}
+                  </Text>
+                </TouchableOpacity>
+              )
+            ) : (
+              <TouchableOpacity style={styles.nextBtn} onPress={handleNext} activeOpacity={0.7}>
                 <Text style={styles.nextText}>
-                  {requesting ? 'Requesting…' : 'Allow Location →'}
+                  {(currentPage as IconPage)?.isPermission ? 'Allow Location →' : 'Next →'}
                 </Text>
               </TouchableOpacity>
-            )
-          ) : (
-            <TouchableOpacity style={styles.nextBtn} onPress={handleNext} activeOpacity={0.7}>
-              <Text style={styles.nextText}>
-                {currentPage?.isPermission ? 'Allow Location →' : 'Next →'}
-              </Text>
-            </TouchableOpacity>
-          )}
+            )}
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
 
-  // ── Page ──
+  // ── Video slide ──
+  videoSlide: {
+    height,
+    backgroundColor: '#000',
+  },
+  videoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 32,
+    background: 'transparent',
+  },
+  videoTitle: {
+    fontSize: 38,
+    fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: -1,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  videoTapArea: {
+    position: 'absolute',
+    alignSelf: 'center',
+  },
+  videoNextBtn: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.55)',
+    borderRadius: 28,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+  },
+  videoNextText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 0.2,
+  },
+
+  // ── Icon slide ──
   page: { flex: 1 },
   iconArea: {
     flex: 1,
@@ -294,8 +386,8 @@ const styles = StyleSheet.create({
   // ── Bottom controls ──
   bottom: {
     paddingHorizontal: 32,
-    paddingBottom: 12,
     gap: 16,
+    backgroundColor: BG,
   },
   dots: {
     flexDirection: 'row',
