@@ -37,6 +37,14 @@ function regionToBBox(region: Region): [number, number, number, number] {
   ];
 }
 
+// Deterministic jitter to break collinear tower coordinates from rounded DB data.
+// Uses a simple hash of cellid so the same tower always gets the same offset.
+// ±0.0003° ≈ ±30 m — imperceptible at city scale, eliminates straight-line clusters.
+function jitter(seed: number): number {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+  return (x - Math.floor(x) - 0.5) * 0.0006;
+}
+
 function GlassView({ style, children }: { style?: object; children: React.ReactNode }) {
   return (
     <View
@@ -145,7 +153,13 @@ export default function MapTab() {
   const clusterPoints = useMemo<Supercluster.PointFeature<{ tower: CellTower }>[]>(
     () => filteredTowers.map((tower) => ({
       type: 'Feature',
-      geometry: { type: 'Point', coordinates: [tower.lon, tower.lat] },
+      geometry: {
+        type: 'Point',
+        coordinates: [
+          tower.lon + jitter(tower.cellid),
+          tower.lat + jitter(tower.cellid + 99991),
+        ],
+      },
       properties: { tower },
     })),
     [filteredTowers],
