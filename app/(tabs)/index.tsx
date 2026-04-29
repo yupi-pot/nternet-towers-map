@@ -348,47 +348,56 @@ export default function MapTab() {
   // Done in a single effect so positions and items are always in sync —
   // no stale key lookups, no dropped items from volatile cluster_ids.
   useEffect(() => {
-    if (!mapRef.current || isPanning || !currentRegion) {
+    const region = currentRegion ?? mapRegionRef.current;
+    if (!mapRef.current || isPanning || !region) {
       setRippleItems([]);
       return;
     }
-    const zoom = regionToZoom(currentRegion);
+    const zoom = regionToZoom(region);
     if (zoom < MIN_ZOOM || clusters.length > MAX_MARKERS) {
       setRippleItems([]);
       return;
     }
     let cancelled = false;
-    Promise.all(
-      clusters.map(async (item) => {
-        const [lon, lat] = item.geometry.coordinates;
-        if (!isFinite(lat) || !isFinite(lon)) return null;
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const pos = await (mapRef.current as any).pointForCoordinate({ latitude: lat, longitude: lon });
-          if (!pos || !isFinite(pos.x) || !isFinite(pos.y)) return null;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const isCluster = (item.properties as any).cluster;
-          if (isCluster) {
-            const { cluster_id } = item.properties as Supercluster.ClusterProperties;
-            const counts = item.properties as unknown as ClusterRadioCounts;
-            const dom = dominantRadio({ gsm: counts.gsm ?? 0, umts: counts.umts ?? 0, lte: counts.lte ?? 0, nr: counts.nr ?? 0 });
-            const cfg = RIPPLE_CONFIG[dom];
-            return { id: `c${cluster_id}`, x: pos.x, y: pos.y, color: RADIO_COLORS[dom], ...cfg, staggerMs: (cluster_id % 8) * 300 } as RippleItem;
-          } else {
-            const { tower } = item.properties as { tower: CellTower };
-            if (!tower) return null;
-            const cfg = RIPPLE_CONFIG[tower.radio];
-            return { id: `t${tower.cellid}`, x: pos.x, y: pos.y, color: RADIO_COLORS[tower.radio], ...cfg, staggerMs: (tower.cellid % 8) * 300 } as RippleItem;
+    // Delay so the map finishes rendering pins in their final positions before
+    // we query screen coordinates — without this, pointForCoordinate can return
+    // stale positions from the previous camera state.
+    const delay = setTimeout(() => {
+      Promise.all(
+        clusters.map(async (item) => {
+          const [lon, lat] = item.geometry.coordinates;
+          if (!isFinite(lat) || !isFinite(lon)) return null;
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const pos = await (mapRef.current as any).pointForCoordinate({ latitude: lat, longitude: lon });
+            if (!pos || !isFinite(pos.x) || !isFinite(pos.y)) return null;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const isCluster = (item.properties as any).cluster;
+            if (isCluster) {
+              const { cluster_id } = item.properties as Supercluster.ClusterProperties;
+              const counts = item.properties as unknown as ClusterRadioCounts;
+              const dom = dominantRadio({ gsm: counts.gsm ?? 0, umts: counts.umts ?? 0, lte: counts.lte ?? 0, nr: counts.nr ?? 0 });
+              const cfg = RIPPLE_CONFIG[dom];
+              return { id: `c${cluster_id}`, x: pos.x, y: pos.y, color: RADIO_COLORS[dom], ...cfg, staggerMs: (cluster_id % 8) * 300 } as RippleItem;
+            } else {
+              const { tower } = item.properties as { tower: CellTower };
+              if (!tower) return null;
+              const cfg = RIPPLE_CONFIG[tower.radio];
+              return { id: `t${tower.cellid}`, x: pos.x, y: pos.y, color: RADIO_COLORS[tower.radio], ...cfg, staggerMs: (tower.cellid % 8) * 300 } as RippleItem;
+            }
+          } catch {
+            return null;
           }
-        } catch {
-          return null;
-        }
-      }),
-    ).then((results) => {
-      if (cancelled) return;
-      setRippleItems(results.filter((r): r is RippleItem => r !== null));
-    });
-    return () => { cancelled = true; };
+        }),
+      ).then((results) => {
+        if (cancelled) return;
+        setRippleItems(results.filter((r): r is RippleItem => r !== null));
+      });
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(delay);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clusters, currentRegion, isPanning]);
 

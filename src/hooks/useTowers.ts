@@ -22,6 +22,8 @@ export function useTowers(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Accumulated tower cache — prevents blinking when panning over known areas
+  const towersMapRef = useRef<Map<string, CellTower>>(new Map());
 
   const minLat = bbox?.minLat ?? null;
   const maxLat = bbox?.maxLat ?? null;
@@ -47,12 +49,33 @@ export function useTowers(
       try {
         const { towers: result, fetchedBBox: resultBBox } = await fetcher(bboxArg);
 
-        if (result.length === 0) {
+        // Merge new towers into the accumulated cache so already-visible towers
+        // don't blink out when panning to a slightly different region.
+        result.forEach((tower) => {
+          const key = `${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`;
+          towersMapRef.current.set(key, tower);
+        });
+
+        // Prune towers that are well outside the current viewport to bound memory.
+        const latPad = (maxLat - minLat) * 2;
+        const lonPad = (maxLon - minLon) * 2;
+        for (const [key, tower] of towersMapRef.current) {
+          if (
+            tower.lat < minLat - latPad ||
+            tower.lat > maxLat + latPad ||
+            tower.lon < minLon - lonPad ||
+            tower.lon > maxLon + lonPad
+          ) {
+            towersMapRef.current.delete(key);
+          }
+        }
+
+        if (towersMapRef.current.size === 0) {
           setError('No towers found');
           setTowers([]);
         } else {
           setError(null);
-          setTowers(result);
+          setTowers(Array.from(towersMapRef.current.values()));
         }
 
         setFetchedBBox(resultBBox);
