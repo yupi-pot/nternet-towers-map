@@ -555,7 +555,6 @@ export default function MapTab() {
                   onPress={() => toggleFilter(radio)}
                   style={[
                     styles.pill,
-                    { flex: 1 },
                     active
                       ? { backgroundColor: color + '18', borderWidth: 1, borderColor: color + 'AA' }
                       : styles.pillInactive,
@@ -682,8 +681,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 100,
     paddingVertical: 7,
-    paddingHorizontal: 13,
-    gap: 6,
+    paddingHorizontal: 10,
+    gap: 5,
   },
   pillInactive: { backgroundColor: 'rgba(255,255,255,0.92)' },
   pillDot: { width: 6, height: 6, borderRadius: 3 },
