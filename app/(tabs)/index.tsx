@@ -5,7 +5,7 @@ import Supercluster from 'supercluster';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-
+  Dimensions,
   Platform,
   StyleSheet,
   Text,
@@ -26,6 +26,7 @@ import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapErrorBoundary } from '@/src/components/MapErrorBoundary';
+import CoverageOverlay from '@/src/components/CoverageOverlay';
 import TowerDetailModal from '@/src/components/TowerDetailModal';
 import { TowerMarker, TOWER_MARKER_ANCHOR } from '@/src/components/TowerMarker';
 import { useTowersContext } from '@/src/context/TowersContext';
@@ -277,6 +278,7 @@ export default function MapTab() {
 
   const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
+  const [coverageTower, setCoverageTower] = useState<CellTower | null>(null);
   const [rippleItems, setRippleItems] = useState<RippleItem[]>([]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -350,6 +352,31 @@ export default function MapTab() {
       500,
     );
   }, [location]);
+
+  // Open the sheet for a tower and center it in the visible map area above the sheet
+  const handleTowerPress = useCallback((tower: CellTower) => {
+    setSelectedTower(tower);
+    setCoverageTower(tower);
+
+    const region = currentRegion ?? mapRegionRef.current;
+    if (!mapRef.current || !region) return;
+
+    // Shift map center south so the tower pin lands in the visible area above the sheet.
+    // Estimated sheet height ~460px; offset = half that / screen height * latDelta
+    const { height: screenH } = Dimensions.get('window');
+    const latOffset = (460 / 2 / screenH) * region.latitudeDelta;
+
+    isProgrammaticMoveRef.current = true;
+    mapRef.current.animateToRegion(
+      {
+        latitude: tower.lat - latOffset,
+        longitude: tower.lon,
+        latitudeDelta: region.latitudeDelta,
+        longitudeDelta: region.longitudeDelta,
+      },
+      400,
+    );
+  }, [currentRegion, mapRegionRef]);
 
   const filteredTowers = useMemo(
     () => towers.filter((t) => mapFilters.has(t.radio)),
@@ -484,9 +511,10 @@ export default function MapTab() {
         }}
         onRegionChangeComplete={handleRegionChangeComplete}
         onPanDrag={handlePanDrag}
-
+        onPress={() => { setSelectedTower(null); setCoverageTower(null); }}
         showsUserLocation
       >
+        {coverageTower && <CoverageOverlay tower={coverageTower} />}
         {!tooZoomedOut && !tooManyMarkers && clusters.flatMap((item) => {
           const [lon, lat] = item.geometry.coordinates;
           if (!isFinite(lat) || !isFinite(lon)) return [];
@@ -527,7 +555,7 @@ export default function MapTab() {
               key={`${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`}
               coordinate={{ latitude: lat, longitude: lon }}
               tracksViewChanges={false}
-              onPress={() => setSelectedTower(tower)}
+              onPress={() => handleTowerPress(tower)}
               anchor={TOWER_MARKER_ANCHOR}
             >
               <TowerMarker radio={tower.radio} cellid={tower.cellid} />
@@ -636,6 +664,7 @@ export default function MapTab() {
         userLon={location.longitude}
         onClose={() => setSelectedTower(null)}
       />
+
     </View>
     </MapErrorBoundary>
   );
