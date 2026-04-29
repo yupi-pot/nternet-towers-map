@@ -32,7 +32,6 @@ export function useTowers(
 
     if (timerRef.current) clearTimeout(timerRef.current);
 
-    setTowers([]);
     setFetchedBBox(null);
     setError(null);
     setIsLoading(true);
@@ -48,6 +47,7 @@ export function useTowers(
         setError('No towers found');
         setTowers([]);
       } else {
+        setError(null);
         setTowers(result);
       }
 

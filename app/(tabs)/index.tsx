@@ -245,7 +245,7 @@ export default function MapTab() {
               pinColor={RADIO_COLORS[tower.radio] ?? '#8b5cf6'}
               tracksViewChanges={false}
               onPress={() => setSelectedTower(tower)}
-              title={RADIO_LABELS[tower.radio]}
+              title={RADIO_LABELS[tower.radio] ?? tower.radio}
               description={`Cell ID: ${tower.cellid}`}
             />
           );
