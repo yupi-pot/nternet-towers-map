@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Animated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -228,6 +229,40 @@ function GlassView({ style, children }: { style?: object; children: React.ReactN
   return (
     <View style={[styles.glass, Platform.OS === 'android' ? styles.glassAndroid : styles.glassIOS, style]}>
       {children}
+    </View>
+  );
+}
+
+// Slot-machine counter: old number slides out, new slides in from opposite direction.
+function AnimatedCount({ value, textStyle }: { value: number; textStyle: object }) {
+  const [displayed, setDisplayed] = useState(value);
+  const prevRef = useRef(value);
+  const y  = useSharedValue(0);
+  const op = useSharedValue(1);
+
+  useEffect(() => {
+    if (value === prevRef.current) return;
+    const up = value > prevRef.current;
+    prevRef.current = value;
+
+    y.value  = withTiming(up ? -44 : 44, { duration: 140, easing: Easing.in(Easing.ease) });
+    op.value = withTiming(0, { duration: 140 }, () => {
+      runOnJS(setDisplayed)(value);
+      y.value  = up ? 44 : -44;
+      y.value  = withTiming(0,  { duration: 260, easing: Easing.out(Easing.back(1.2)) });
+      op.value = withTiming(1,  { duration: 200 });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: y.value }],
+    opacity: op.value,
+  }));
+
+  return (
+    <View style={{ height: 42, overflow: 'hidden', justifyContent: 'center' }}>
+      <Animated.Text style={[textStyle, animStyle]}>{displayed}</Animated.Text>
     </View>
   );
 }
@@ -486,17 +521,12 @@ export default function MapTab() {
 
       {/* ── Top controls ── */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
-        <GlassView style={styles.statusBar} pointerEvents="auto">
+        <View style={styles.statusBar} pointerEvents="auto">
           {/* Title row */}
           <View style={styles.titleRow}>
-            {towersLoading
-              ? <ActivityIndicator size="small" color="#1c1c1e" style={{ marginRight: 8 }} />
-              : null}
-            <Text style={styles.bigTitle}>
-              Found{' '}
-              <Text style={styles.bigTitleCount}>{displayCount}</Text>
-              {' '}towers
-            </Text>
+            <Text style={styles.bigTitle}>Found </Text>
+            <AnimatedCount value={displayCount} textStyle={styles.bigTitleCount} />
+            <Text style={styles.bigTitle}> towers</Text>
           </View>
 
           {/* Filter pills — single line */}
@@ -535,7 +565,7 @@ export default function MapTab() {
               );
             })}
           </View>
-        </GlassView>
+        </View>
       </SafeAreaView>
 
       {/* ── Search this area ── */}
@@ -615,21 +645,26 @@ const styles = StyleSheet.create({
   glassIOS: { backgroundColor: 'rgba(255,255,255,0.82)' },
   glassAndroid: { backgroundColor: 'rgba(255,255,255,0.95)' },
 
-  topOverlay: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 12 },
+  topOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
 
   statusBar: {
     flexDirection: 'column',
-    paddingVertical: 12, paddingHorizontal: 16, gap: 10,
-    marginTop: 8,
+    paddingTop: 10, paddingBottom: 12, paddingHorizontal: 20, gap: 10,
   },
-  titleRow: { flexDirection: 'row', alignItems: 'center' },
-  bigTitle: { fontSize: 34, fontWeight: '800', color: '#1c1c1e', letterSpacing: -0.5 },
-  bigTitleCount: { color: '#3b82f6' },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-end' },
+  bigTitle: {
+    fontSize: 34, fontWeight: '800', color: '#1c1c1e', letterSpacing: -0.5,
+    textShadowColor: 'rgba(255,255,255,0.7)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6,
+  },
+  bigTitleCount: {
+    fontSize: 34, fontWeight: '800', color: '#3b82f6', letterSpacing: -0.5,
+    textShadowColor: 'rgba(255,255,255,0.7)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6,
+  },
 
   chipRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 5, alignItems: 'center' },
   chip: { borderRadius: 8, paddingVertical: 5, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
   chipAll: { backgroundColor: '#1c1c1e' },
-  chipInactive: { backgroundColor: 'rgba(0,0,0,0.06)' },
+  chipInactive: { backgroundColor: 'rgba(255,255,255,0.65)' },
   chipText: { fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.1 },
   chipTextInactive: { color: '#6b7280' },
 
@@ -642,7 +677,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     gap: 4,
   },
-  pillInactive: { backgroundColor: 'rgba(0,0,0,0.05)' },
+  pillInactive: { backgroundColor: 'rgba(255,255,255,0.65)' },
   pillDot: { width: 5, height: 5, borderRadius: 3 },
   pillText: { fontSize: 10, fontWeight: '600', letterSpacing: 0.1 },
   pillCount: { fontSize: 10, fontWeight: '500' },
