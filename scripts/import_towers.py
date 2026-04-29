@@ -8,9 +8,21 @@ Usage:
   python3 import_towers.py --all             # all country files
 """
 
-import gzip, io, os, sys, time, argparse, csv, requests
+import gzip, io, os, sys, time, argparse, csv, requests, json
 from datetime import datetime, timezone
 from supabase import create_client
+
+STATUS_FILE = os.path.join(os.path.dirname(__file__), "mcc_status.json")
+
+def load_status() -> dict:
+    if os.path.exists(STATUS_FILE):
+        with open(STATUS_FILE) as f:
+            return json.load(f)
+    return {}
+
+def save_status(status: dict):
+    with open(STATUS_FILE, "w") as f:
+        json.dump(status, f, indent=2)
 
 SUPABASE_URL  = "https://nykisarixoohwxqbxdnz.supabase.co"
 SUPABASE_KEY  = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55a2lzYXJpeG9vaHd4cWJ4ZG56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjQyNzksImV4cCI6MjA5MzA0MDI3OX0.YN5vRzHACGAP5l_lTO5ezxrXAEIn65F6YOBp42BYgTo")
@@ -122,19 +134,33 @@ def main():
     sb = create_client(SUPABASE_URL, SUPABASE_KEY)
     print(f"Importing {len(mccs)} MCC file(s) via REST API.\n")
 
+    status = load_status()
     total = 0
     for mcc in mccs:
         t0 = time.time()
         try:
             lines = download_rows(mcc)
             if not lines:
+                entry = status.get(str(mcc), {})
+                entry.update({"status": "no_data", "date": datetime.now().date().isoformat()})
+                status[str(mcc)] = entry
+                save_status(status)
                 continue
             rows = parse_batch(lines)
             loaded = upsert(sb, rows)
-            print(f"  → {loaded:,} rows in {time.time()-t0:.1f}s")
+            elapsed = time.time() - t0
+            print(f"  → {loaded:,} rows in {elapsed:.1f}s")
             total += loaded
+            entry = status.get(str(mcc), {})
+            entry.update({"status": "done", "rows": loaded, "date": datetime.now().date().isoformat()})
+            status[str(mcc)] = entry
+            save_status(status)
         except Exception as e:
             print(f"  ERROR mcc {mcc}: {e}")
+            entry = status.get(str(mcc), {})
+            entry.update({"status": "error", "error": str(e), "date": datetime.now().date().isoformat()})
+            status[str(mcc)] = entry
+            save_status(status)
 
     print(f"\nDone. Total: {total:,} rows")
 
