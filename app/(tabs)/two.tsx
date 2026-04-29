@@ -32,7 +32,7 @@ const RADIO_SHORT: Record<CellTower['radio'], string> = {
   GSM: '2G', UMTS: '3G', LTE: '4G', NR: '5G',
 };
 
-// ─── Glass helper (matches map tab) ──────────────────────────────────────────
+// ─── Glass header (matches map tab) ──────────────────────────────────────────
 function GlassHeader({ children, paddingTop }: { children: React.ReactNode; paddingTop: number }) {
   const inner = (
     <View style={[styles.headerInner, { paddingTop: paddingTop + 10 }]}>
@@ -49,18 +49,89 @@ function GlassHeader({ children, paddingTop }: { children: React.ReactNode; padd
   return <View style={[styles.headerBlur, styles.headerAndroid]}>{inner}</View>;
 }
 
-// ─── Tower row ────────────────────────────────────────────────────────────────
+// ─── Signal bars ──────────────────────────────────────────────────────────────
+function SignalBars({ conf, color }: { conf: 'high' | 'medium' | 'low'; color: string }) {
+  const activeBars = conf === 'high' ? 4 : conf === 'medium' ? 3 : 2;
+  const heights = [0.4, 0.6, 0.8, 1.0];
+  return (
+    <View style={styles.signalBarsRow}>
+      {heights.map((h, i) => (
+        <View
+          key={i}
+          style={[
+            styles.signalBar,
+            { height: 16 * h, backgroundColor: i < activeBars ? color : '#e5e5ea' },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
+// ─── Nearest tower hero card ──────────────────────────────────────────────────
 interface RowItem { tower: CellTower; dist: number | null }
 
+function NearestTowerCard({ item, onPress }: { item: RowItem; onPress: (t: CellTower) => void }) {
+  const { tower, dist } = item;
+  const color = RADIO_COLORS[tower.radio];
+  const carrier = getCarrierName(tower.mcc, tower.mnc);
+  const conf = confidenceLevel(tower.samples);
+
+  return (
+    <TouchableOpacity
+      style={styles.heroCard}
+      onPress={() => onPress(tower)}
+      activeOpacity={0.75}
+    >
+      {/* Colored left accent border */}
+      <View style={[styles.heroAccent, { backgroundColor: color }]} />
+
+      <View style={styles.heroContent}>
+        {/* Top: badge + distance */}
+        <View style={styles.heroTop}>
+          <View style={[styles.badge, { backgroundColor: color }]}>
+            <Text style={styles.badgeText}>{RADIO_SHORT[tower.radio]}</Text>
+          </View>
+          <Text style={[styles.heroDistance, { color }]}>
+            {dist != null ? formatDistance(dist) : '–'}
+          </Text>
+        </View>
+
+        {/* Carrier + cell info */}
+        <Text style={styles.heroCarrier} numberOfLines={1}>{carrier}</Text>
+        <Text style={styles.heroSub}>
+          MCC {tower.mcc} · MNC {tower.mnc} · Cell {tower.cellid}
+        </Text>
+
+        {/* Bottom: confidence + signal bars */}
+        <View style={styles.heroBottom}>
+          <View style={[styles.confPill, { backgroundColor: CONFIDENCE_COLOR[conf] + '22' }]}>
+            <View style={[styles.confDot, { backgroundColor: CONFIDENCE_COLOR[conf] }]} />
+            <Text style={[styles.confLabel, { color: CONFIDENCE_COLOR[conf] }]}>
+              {CONFIDENCE_LABEL[conf]}
+            </Text>
+          </View>
+          <SignalBars conf={conf} color={color} />
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Regular tower row ────────────────────────────────────────────────────────
 function TowerRow({ item, onPress }: { item: RowItem; onPress: (t: CellTower) => void }) {
   const { tower, dist } = item;
+  const color = RADIO_COLORS[tower.radio];
   const carrier = getCarrierName(tower.mcc, tower.mnc);
   const conf = confidenceLevel(tower.samples);
 
   return (
     <TouchableOpacity style={styles.row} onPress={() => onPress(tower)} activeOpacity={0.65}>
+      {/* Colored left accent */}
+      <View style={[styles.rowAccent, { backgroundColor: color }]} />
+
       {/* Network badge */}
-      <View style={[styles.badge, { backgroundColor: RADIO_COLORS[tower.radio] }]}>
+      <View style={[styles.badge, { backgroundColor: color }]}>
         <Text style={styles.badgeText}>{RADIO_SHORT[tower.radio]}</Text>
       </View>
 
@@ -121,12 +192,25 @@ export default function ListTab() {
   }, [towers, mapFilters, location]);
 
   const totalFiltered = towers.filter((t) => activeFilters.has(t.radio)).length;
+  const nearest = rows[0] ?? null;
+  const listRows = rows.slice(1);
+
+  const listHeader = nearest ? (
+    <View>
+      <Text style={styles.sectionLabel}>Nearest Tower</Text>
+      <NearestTowerCard item={nearest} onPress={(t) => setSelectedTower(t)} />
+      {listRows.length > 0 && (
+        <Text style={[styles.sectionLabel, { marginTop: 24 }]}>
+          Nearby  ·  {listRows.length}
+        </Text>
+      )}
+    </View>
+  ) : null;
 
   return (
     <View style={styles.container}>
       {/* ── iOS 26-style navigation header ── */}
       <GlassHeader paddingTop={insets.top}>
-        {/* Large title row */}
         <View style={styles.titleRow}>
           <Text style={styles.largeTitle}>Towers</Text>
           <Text style={styles.countBadge}>
@@ -134,7 +218,6 @@ export default function ListTab() {
           </Text>
         </View>
 
-        {/* Filter chips row */}
         <View style={styles.filterRow}>
           {ALL_RADIOS.map((radio) => {
             const active = activeFilters.has(radio);
@@ -152,7 +235,6 @@ export default function ListTab() {
             );
           })}
 
-          {/* Confidence legend inline */}
           <View style={styles.legendInline}>
             {(['high', 'medium', 'low'] as const).map((level) => (
               <View key={level} style={styles.legendItem}>
@@ -164,7 +246,7 @@ export default function ListTab() {
         </View>
       </GlassHeader>
 
-      {/* ── List ── */}
+      {/* ── Content ── */}
       {isLoading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#1c1c1e" />
@@ -177,13 +259,14 @@ export default function ListTab() {
         </View>
       ) : (
         <FlatList
-          data={rows}
+          data={listRows}
           keyExtractor={(item) =>
             `${item.tower.mcc}-${item.tower.mnc}-${item.tower.lac}-${item.tower.cellid}`
           }
           renderItem={({ item }) => <TowerRow item={item} onPress={(t) => setSelectedTower(t)} />}
           ItemSeparatorComponent={Separator}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+          ListHeaderComponent={listHeader}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 80 }]}
         />
       )}
 
@@ -220,6 +303,7 @@ export default function ListTab() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f2f2f7' },
+  listContent: { paddingTop: 8 },
 
   // ── Header ──
   headerBlur: {
@@ -233,7 +317,6 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 10,
   },
-
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -251,7 +334,6 @@ const styles = StyleSheet.create({
     color: '#8e8e93',
     marginTop: 4,
   },
-
   filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -268,7 +350,6 @@ const styles = StyleSheet.create({
   chipInactive: { backgroundColor: 'rgba(0,0,0,0.07)' },
   chipText: { fontSize: 12, fontWeight: '700', color: '#fff', letterSpacing: 0.2 },
   chipTextInactive: { color: '#6b7280' },
-
   legendInline: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -279,20 +360,103 @@ const styles = StyleSheet.create({
   legendDot: { width: 7, height: 7, borderRadius: 4 },
   legendHint: { fontSize: 11, color: '#aeaeb2', marginLeft: 4, fontWeight: '500' },
 
-  // ── Empty state ──
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, padding: 32 },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: '#3c3c43', textAlign: 'center' },
-  emptyHint: { fontSize: 14, color: '#aeaeb2', textAlign: 'center', lineHeight: 20 },
+  // ── Section labels ──
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8e8e93',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 10,
+  },
 
-  // ── Row ──
+  // ── Hero card ──
+  heroCard: {
+    marginHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  heroAccent: {
+    width: 4,
+    alignSelf: 'stretch',
+  },
+  heroContent: {
+    flex: 1,
+    padding: 18,
+    gap: 6,
+  },
+  heroTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  heroDistance: {
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  heroCarrier: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1c1c1e',
+    letterSpacing: -0.3,
+  },
+  heroSub: {
+    fontSize: 12,
+    color: '#8e8e93',
+    fontVariant: ['tabular-nums'],
+    marginBottom: 6,
+  },
+  heroBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+
+  // ── Signal bars ──
+  signalBarsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 3,
+    height: 16,
+  },
+  signalBar: {
+    width: 4,
+    borderRadius: 2,
+  },
+
+  // ── Regular row ──
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
+    paddingVertical: 14,
+    paddingRight: 16,
     gap: 12,
+    overflow: 'hidden',
   },
+  rowAccent: {
+    width: 3,
+    alignSelf: 'stretch',
+  },
+  rowBody: { flex: 1 },
+  carrierName: { fontSize: 15, fontWeight: '600', color: '#1c1c1e' },
+  rowSub: { fontSize: 12, color: '#8e8e93', marginTop: 2 },
+  rowRight: { alignItems: 'flex-end', gap: 5 },
+  distance: { fontSize: 13, fontWeight: '600', color: '#3b82f6' },
+
+  // ── Shared badge / confidence ──
   badge: {
     borderRadius: 7,
     paddingVertical: 4,
@@ -301,12 +465,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-  rowBody: { flex: 1 },
-  carrierName: { fontSize: 15, fontWeight: '600', color: '#1c1c1e' },
-  rowSub: { fontSize: 12, color: '#8e8e93', marginTop: 2 },
-
-  rowRight: { alignItems: 'flex-end', gap: 5 },
-  distance: { fontSize: 13, fontWeight: '600', color: '#3b82f6' },
   confPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -318,7 +476,12 @@ const styles = StyleSheet.create({
   confDot: { width: 6, height: 6, borderRadius: 3 },
   confLabel: { fontSize: 11, fontWeight: '600' },
 
-  separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#e5e5ea', marginLeft: 70 },
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#e5e5ea', marginLeft: 19 },
+
+  // ── Empty state ──
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, padding: 32 },
+  emptyTitle: { fontSize: 17, fontWeight: '600', color: '#3c3c43', textAlign: 'center' },
+  emptyHint: { fontSize: 14, color: '#aeaeb2', textAlign: 'center', lineHeight: 20 },
 
   // ── Debug ──
   debugBtn: {
