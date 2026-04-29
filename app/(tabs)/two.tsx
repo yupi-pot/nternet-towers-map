@@ -78,7 +78,6 @@ function NearestTowerCard({ item, onPress }: { item: RowItem; onPress: (t: CellT
   const { tower, dist } = item;
   const color = RADIO_COLORS[tower.radio];
   const carrier = getCarrierName(tower.mcc, tower.mnc);
-  const conf = confidenceLevel(tower.samples);
 
   return (
     <TouchableOpacity
@@ -106,16 +105,6 @@ function NearestTowerCard({ item, onPress }: { item: RowItem; onPress: (t: CellT
           MCC {tower.mcc} · MNC {tower.mnc} · Cell {tower.cellid}
         </Text>
 
-        {/* Bottom: confidence + signal bars */}
-        <View style={styles.heroBottom}>
-          <View style={[styles.confPill, { backgroundColor: CONFIDENCE_COLOR[conf] + '22' }]}>
-            <View style={[styles.confDot, { backgroundColor: CONFIDENCE_COLOR[conf] }]} />
-            <Text style={[styles.confLabel, { color: CONFIDENCE_COLOR[conf] }]}>
-              {CONFIDENCE_LABEL[conf]}
-            </Text>
-          </View>
-          <SignalBars conf={conf} color={color} />
-        </View>
       </View>
     </TouchableOpacity>
   );
@@ -126,7 +115,6 @@ function TowerRow({ item, onPress }: { item: RowItem; onPress: (t: CellTower) =>
   const { tower, dist } = item;
   const color = RADIO_COLORS[tower.radio];
   const carrier = getCarrierName(tower.mcc, tower.mnc);
-  const conf = confidenceLevel(tower.samples);
 
   return (
     <TouchableOpacity style={styles.row} onPress={() => onPress(tower)} activeOpacity={0.65}>
@@ -146,16 +134,12 @@ function TowerRow({ item, onPress }: { item: RowItem; onPress: (t: CellTower) =>
         </Text>
       </View>
 
-      {/* Distance + confidence */}
-      <View style={styles.rowRight}>
-        {dist != null && <Text style={styles.distance}>{formatDistance(dist)}</Text>}
-        <View style={[styles.confPill, { backgroundColor: CONFIDENCE_COLOR[conf] + '22' }]}>
-          <View style={[styles.confDot, { backgroundColor: CONFIDENCE_COLOR[conf] }]} />
-          <Text style={[styles.confLabel, { color: CONFIDENCE_COLOR[conf] }]}>
-            {CONFIDENCE_LABEL[conf]}
-          </Text>
+      {/* Distance */}
+      {dist != null && (
+        <View style={styles.rowRight}>
+          <Text style={styles.distance}>{formatDistance(dist)}</Text>
         </View>
-      </View>
+      )}
     </TouchableOpacity>
   );
 }

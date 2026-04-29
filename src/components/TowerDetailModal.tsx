@@ -150,12 +150,21 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onD
               <Text style={styles.carrierName}>{carrier}</Text>
             </View>
 
-            <View style={[styles.confBadge, { borderColor: CONFIDENCE_COLOR[conf] }]}>
+            <TouchableOpacity
+              style={[styles.confBadge, { borderColor: CONFIDENCE_COLOR[conf] }]}
+              onPress={() => Alert.alert(
+                'Confidence',
+                'Based on the number of independent measurements for this tower.\n\n• High — 10+ measurements\n• Medium — 3–9 measurements\n• Low — 1–2 measurements\n\nMore measurements from different devices mean a more accurate location.',
+                [{ text: 'OK' }],
+              )}
+              activeOpacity={0.7}
+            >
               <View style={[styles.confDot, { backgroundColor: CONFIDENCE_COLOR[conf] }]} />
               <Text style={[styles.confText, { color: CONFIDENCE_COLOR[conf] }]}>
-                {CONFIDENCE_LABEL[conf]}
+                Confidence · {CONFIDENCE_LABEL[conf]}
               </Text>
-            </View>
+              <Text style={[styles.confInfo, { color: CONFIDENCE_COLOR[conf] }]}>ⓘ</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
               <Text style={styles.closeBtnText}>✕</Text>
@@ -272,6 +281,7 @@ const styles = StyleSheet.create({
   },
   confDot: { width: 7, height: 7, borderRadius: 4 },
   confText: { fontSize: 12, fontWeight: '700' },
+  confInfo: { fontSize: 13, fontWeight: '500', opacity: 0.7 },
 
   closeBtn: { padding: 4, marginLeft: 4 },
   closeBtnText: { fontSize: 18, color: '#94a3b8' },
