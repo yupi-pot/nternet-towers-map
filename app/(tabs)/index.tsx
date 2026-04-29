@@ -368,11 +368,11 @@ export default function MapTab() {
     [filteredTowers],
   );
 
-  useEffect(() => {
-    scRef.current.load(clusterPoints);
-  }, [clusterPoints]);
-
+  // load() and getClusters() must be in the same memo so the index is always
+  // up-to-date before querying — a useEffect load would fire after render,
+  // leaving getClusters querying stale data and causing native insert-index crashes.
   const clusters = useMemo(() => {
+    scRef.current.load(clusterPoints);
     const region = currentRegion ?? mapRegionRef.current;
     if (!region) return [];
     return scRef.current.getClusters(regionToBBox(region), regionToZoom(region));
