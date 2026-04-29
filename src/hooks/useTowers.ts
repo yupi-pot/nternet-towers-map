@@ -41,18 +41,24 @@ export function useTowers(
       const fetcher =
         dataSource === 'supabase' ? fetchTowersFromSupabase : fetchTowers;
 
-      const { towers: result, fetchedBBox: resultBBox } = await fetcher(bboxArg);
+      try {
+        const { towers: result, fetchedBBox: resultBBox } = await fetcher(bboxArg);
 
-      if (result.length === 0) {
-        setError('No towers found');
+        if (result.length === 0) {
+          setError('No towers found');
+          setTowers([]);
+        } else {
+          setError(null);
+          setTowers(result);
+        }
+
+        setFetchedBBox(resultBBox);
+      } catch {
+        setError('Failed to load towers');
         setTowers([]);
-      } else {
-        setError(null);
-        setTowers(result);
+      } finally {
+        setIsLoading(false);
       }
-
-      setFetchedBBox(resultBBox);
-      setIsLoading(false);
     }, 300);
 
     return () => {

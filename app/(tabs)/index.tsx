@@ -13,6 +13,7 @@ import {
 import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { MapErrorBoundary } from '@/src/components/MapErrorBoundary';
 import TowerDetailModal from '@/src/components/TowerDetailModal';
 import { useTowersContext } from '@/src/context/TowersContext';
 import { CellTower, RADIO_COLORS, RADIO_LABELS } from '@/src/types';
@@ -23,6 +24,9 @@ const RADIO_SHORT: Record<CellTower['radio'], string> = {
 };
 
 const supercluster = new Supercluster({ radius: 40, maxZoom: 16 });
+
+const MIN_ZOOM = 9;     // below this zoom level: skip markers, show overlay
+const MAX_MARKERS = 500; // above this cluster count: warn user to zoom in
 
 function regionToZoom(region: Region): number {
   return Math.round(Math.log(360 / region.longitudeDelta) / Math.LN2);
@@ -198,6 +202,10 @@ export default function MapTab() {
 
   const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
 
+  const zoom = currentRegion ? regionToZoom(currentRegion) : MIN_ZOOM;
+  const tooZoomedOut = zoom < MIN_ZOOM;
+  const tooManyMarkers = !tooZoomedOut && clusters.length > MAX_MARKERS;
+
   if (locationLoading) {
     return (
       <View style={styles.centered}>
@@ -214,14 +222,24 @@ export default function MapTab() {
     );
   }
 
+  if (!location) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text style={styles.centeredText}>Waiting for location…</Text>
+      </View>
+    );
+  }
+
   return (
+    <MapErrorBoundary onReset={() => setCurrentRegion(null)}>
     <View style={styles.container}>
       <MapView
         ref={mapRef}
         style={styles.map}
         initialRegion={{
-          latitude: location!.latitude,
-          longitude: location!.longitude,
+          latitude: location.latitude,
+          longitude: location.longitude,
           latitudeDelta: 0.015,
           longitudeDelta: 0.015,
         }}
@@ -229,12 +247,15 @@ export default function MapTab() {
         onPanDrag={handlePanDrag}
         showsUserLocation
       >
-        {clusters.map((item) => {
+        {!tooZoomedOut && !tooManyMarkers && clusters.map((item) => {
           const [lon, lat] = item.geometry.coordinates;
+          if (!isFinite(lat) || !isFinite(lon)) return null;
+
           const isCluster = item.properties.cluster;
 
           if (isCluster) {
             const { cluster_id, point_count } = item.properties as Supercluster.ClusterProperties;
+            if (!isFinite(cluster_id) || !isFinite(point_count)) return null;
             return (
               <ClusterMarker
                 key={`cluster-${cluster_id}`}
@@ -243,8 +264,8 @@ export default function MapTab() {
                 clusterId={cluster_id}
                 pointCount={point_count}
                 onPress={() => {
-                  const zoom = supercluster.getClusterExpansionZoom(cluster_id);
-                  const delta = 360 / Math.pow(2, zoom);
+                  const expansionZoom = supercluster.getClusterExpansionZoom(cluster_id);
+                  const delta = 360 / Math.pow(2, expansionZoom);
                   mapRef.current?.animateToRegion(
                     { latitude: lat, longitude: lon, latitudeDelta: delta, longitudeDelta: delta },
                     300,
@@ -255,6 +276,7 @@ export default function MapTab() {
           }
 
           const { tower } = item.properties as { tower: CellTower };
+          if (!tower) return null;
           return (
             <Marker
               key={`${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`}
@@ -268,6 +290,17 @@ export default function MapTab() {
           );
         })}
       </MapView>
+
+      {/* ── Zoom / density overlay ── */}
+      {(tooZoomedOut || tooManyMarkers) && (
+        <View style={styles.zoomWarning} pointerEvents="none">
+          <GlassView>
+            <Text style={styles.zoomWarningText}>
+              {tooZoomedOut ? 'Zoom in to see towers' : 'Too many towers — zoom in for detail'}
+            </Text>
+          </GlassView>
+        </View>
+      )}
 
       {/* ── Top controls ── */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
@@ -367,11 +400,12 @@ export default function MapTab() {
 
       <TowerDetailModal
         tower={selectedTower}
-        userLat={location?.latitude ?? null}
-        userLon={location?.longitude ?? null}
+        userLat={location.latitude}
+        userLon={location.longitude}
         onClose={() => setSelectedTower(null)}
       />
     </View>
+    </MapErrorBoundary>
   );
 }
 
@@ -431,6 +465,12 @@ const styles = StyleSheet.create({
   },
   searchBtn: { paddingVertical: 11, paddingHorizontal: 20 },
   searchText: { fontSize: 14, fontWeight: '600', color: '#1c1c1e', letterSpacing: -0.1 },
+
+  zoomWarning: {
+    position: 'absolute', bottom: 160, left: 0, right: 0,
+    alignItems: 'center',
+  },
+  zoomWarningText: { fontSize: 13, fontWeight: '600', color: '#1c1c1e', paddingVertical: 9, paddingHorizontal: 18 },
 
   locationBtnWrap: { position: 'absolute', bottom: 108, right: 14 },
   sentryDebugBtn: { position: 'absolute', bottom: 160, right: 14 },
