@@ -602,16 +602,14 @@ export default function MapTab() {
         </View>
       )}
 
-      {/* ── Top gradient scrim ── */}
-      <LinearGradient
-        colors={['rgba(255,255,255,0.96)', 'rgba(255,255,255,0.60)', 'rgba(255,255,255,0)']}
-        locations={[0, 0.55, 1]}
-        style={styles.topGradient}
-        pointerEvents="none"
-      />
-
       {/* ── Top controls ── */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
+        <LinearGradient
+          colors={['rgba(255,255,255,0.96)', 'rgba(255,255,255,0.60)', 'rgba(255,255,255,0)']}
+          locations={[0, 0.55, 1]}
+          style={styles.topGradient}
+          pointerEvents="none"
+        />
         <View style={styles.statusBar} pointerEvents="auto">
           {/* Title row */}
           <View style={styles.titleRow}>
@@ -714,7 +712,7 @@ const styles = StyleSheet.create({
   glassIOS: { backgroundColor: 'rgba(255,255,255,0.82)' },
   glassAndroid: { backgroundColor: 'rgba(255,255,255,0.95)' },
 
-  topGradient: { position: 'absolute', top: 0, left: 0, right: 0, height: 200, zIndex: 5 },
+  topGradient: { position: 'absolute', top: 0, left: 0, right: 0, height: 200 },
   topOverlay: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 6 },
 
   statusBar: {
