@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   saturationOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 150, 0, 0.15)',
+    backgroundColor: 'rgba(255, 150, 0, 0.10)',
   },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, backgroundColor: '#f8fafc' },
   centeredText: { fontSize: 15, color: '#64748b' },
