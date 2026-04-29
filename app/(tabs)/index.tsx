@@ -288,6 +288,8 @@ export default function MapTab() {
   const userHasDraggedRef      = useRef(false);
   const isPanningRef           = useRef(false);
   const isProgrammaticMoveRef  = useRef(false);
+  // Prevents MapView.onPress from clearing coverage on the same tap that opened it
+  const markerJustPressedRef   = useRef(false);
   const [isPanning, setIsPanning] = useState(false);
 
   if (towers.length > 0) firstFetchDoneRef.current = true;
@@ -355,6 +357,7 @@ export default function MapTab() {
 
   // Open the sheet for a tower and center it in the visible map area above the sheet
   const handleTowerPress = useCallback((tower: CellTower) => {
+    markerJustPressedRef.current = true; // block MapView.onPress for this tap
     setSelectedTower(tower);
     setCoverageTower(tower);
 
@@ -511,7 +514,13 @@ export default function MapTab() {
         }}
         onRegionChangeComplete={handleRegionChangeComplete}
         onPanDrag={handlePanDrag}
-        onPress={() => { if (!selectedTower) { setCoverageTower(null); } }}
+        onPress={() => {
+          if (markerJustPressedRef.current) {
+            markerJustPressedRef.current = false;
+            return;
+          }
+          setCoverageTower(null);
+        }}
         showsUserLocation
       >
         {coverageTower && <CoverageOverlay tower={coverageTower} />}
