@@ -277,7 +277,7 @@ export default function MapTab() {
 
   const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
-  const [markerPositions, setMarkerPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [rippleItems, setRippleItems] = useState<RippleItem[]>([]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef            = useRef<any>(null);
@@ -344,13 +344,17 @@ export default function MapTab() {
     );
   }, [location]);
 
-  // Ask MapView for the exact screen point for every visible cluster/tower.
-  // This eliminates all manual projection math and gives pixel-perfect alignment.
+  // Build ripple items by asking MapView for exact screen positions.
+  // Done in a single effect so positions and items are always in sync —
+  // no stale key lookups, no dropped items from volatile cluster_ids.
   useEffect(() => {
-    if (!mapRef.current || isPanning || !currentRegion) return;
+    if (!mapRef.current || isPanning || !currentRegion) {
+      setRippleItems([]);
+      return;
+    }
     const zoom = regionToZoom(currentRegion);
     if (zoom < MIN_ZOOM || clusters.length > MAX_MARKERS) {
-      setMarkerPositions({});
+      setRippleItems([]);
       return;
     }
     let cancelled = false;
@@ -360,22 +364,28 @@ export default function MapTab() {
         if (!isFinite(lat) || !isFinite(lon)) return null;
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const point = await (mapRef.current as any).pointForCoordinate({ latitude: lat, longitude: lon });
+          const pos = await (mapRef.current as any).pointForCoordinate({ latitude: lat, longitude: lon });
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const isCluster = (item.properties as any).cluster;
-          const key = isCluster
-            ? `c${(item.properties as Supercluster.ClusterProperties).cluster_id}`
-            : `t${((item.properties as { tower: CellTower }).tower)?.cellid}`;
-          return key ? { key, point } : null;
+          if (isCluster) {
+            const { cluster_id } = item.properties as Supercluster.ClusterProperties;
+            const counts = item.properties as unknown as ClusterRadioCounts;
+            const dom = dominantRadio({ gsm: counts.gsm ?? 0, umts: counts.umts ?? 0, lte: counts.lte ?? 0, nr: counts.nr ?? 0 });
+            const cfg = RIPPLE_CONFIG[dom];
+            return { id: `c${cluster_id}`, x: pos.x, y: pos.y, color: RADIO_COLORS[dom], ...cfg, staggerMs: (cluster_id % 8) * 300 } as RippleItem;
+          } else {
+            const { tower } = item.properties as { tower: CellTower };
+            if (!tower) return null;
+            const cfg = RIPPLE_CONFIG[tower.radio];
+            return { id: `t${tower.cellid}`, x: pos.x, y: pos.y, color: RADIO_COLORS[tower.radio], ...cfg, staggerMs: (tower.cellid % 8) * 300 } as RippleItem;
+          }
         } catch {
           return null;
         }
       }),
     ).then((results) => {
       if (cancelled) return;
-      const positions: Record<string, { x: number; y: number }> = {};
-      results.forEach((r) => r && (positions[r.key] = r.point));
-      setMarkerPositions(positions);
+      setRippleItems(results.filter((r): r is RippleItem => r !== null));
     });
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -406,39 +416,6 @@ export default function MapTab() {
     return supercluster.getClusters(regionToBBox(region), regionToZoom(region));
   }, [clusterPoints, currentRegion, mapRegionRef]);
 
-  // Ripple overlay items — positions come from pointForCoordinate (exact map projection).
-  const rippleItems = useMemo<RippleItem[]>(() => {
-    if (isPanning || !currentRegion || !Object.keys(markerPositions).length) return [];
-    const zoom = regionToZoom(currentRegion);
-    if (zoom < MIN_ZOOM || clusters.length > MAX_MARKERS) return [];
-
-    const items: RippleItem[] = [];
-
-    for (const item of clusters) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const isCluster = (item.properties as any).cluster;
-      const key = isCluster
-        ? `c${(item.properties as Supercluster.ClusterProperties).cluster_id}`
-        : `t${((item.properties as { tower: CellTower }).tower)?.cellid}`;
-      const pos = key ? markerPositions[key] : undefined;
-      if (!pos) continue;
-
-      if (isCluster) {
-        const { cluster_id, point_count } = item.properties as Supercluster.ClusterProperties;
-        const counts = item.properties as unknown as ClusterRadioCounts;
-        const dom = dominantRadio({ gsm: counts.gsm ?? 0, umts: counts.umts ?? 0, lte: counts.lte ?? 0, nr: counts.nr ?? 0 });
-        const cfg = RIPPLE_CONFIG[dom];
-        items.push({ id: `c${cluster_id}`, x: pos.x, y: pos.y, color: RADIO_COLORS[dom], ...cfg, staggerMs: (cluster_id % 8) * 300 });
-        void point_count;
-      } else {
-        const { tower } = item.properties as { tower: CellTower };
-        if (!tower) continue;
-        const cfg = RIPPLE_CONFIG[tower.radio];
-        items.push({ id: `t${tower.cellid}`, x: pos.x, y: pos.y, color: RADIO_COLORS[tower.radio], ...cfg, staggerMs: (tower.cellid % 8) * 300 });
-      }
-    }
-    return items;
-  }, [isPanning, clusters, currentRegion, markerPositions]);
 
   const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
   const radioCounts = useMemo(() => {
