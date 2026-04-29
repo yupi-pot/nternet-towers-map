@@ -90,7 +90,7 @@ const PAGES: Page[] = [
 
 // ─── Video slide ───────────────────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const VIDEO_SOURCE = require('../assets/cellr_Veo 3.1 Image to Video_2026-04-29_17-41-16.mov');
+const VIDEO_SOURCE = require('../assets/onboarding.mov');
 
 function VideoSlide({ isActive, title }: { isActive: boolean; title: string }) {
   const player = useVideoPlayer(VIDEO_SOURCE, (p) => {
