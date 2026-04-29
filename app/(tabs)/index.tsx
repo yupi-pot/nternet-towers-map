@@ -682,7 +682,6 @@ export default function MapTab() {
         userLat={location.latitude}
         userLon={location.longitude}
         onClose={() => setSelectedTower(null)}
-        onDismissAll={() => { setSelectedTower(null); setCoverageTower(null); }}
       />
 
     </View>

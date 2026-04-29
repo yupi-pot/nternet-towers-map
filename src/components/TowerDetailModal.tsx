@@ -14,11 +14,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,14 +42,12 @@ interface Props {
   tower: CellTower | null;
   userLat: number | null;
   userLon: number | null;
-  /** X button — closes sheet only, coverage stays on map */
+  /** Closes sheet only — coverage stays on map (X button, overlay tap, swipe) */
   onClose: () => void;
-  /** Tap outside the card — closes sheet AND coverage */
-  onDismissAll: () => void;
   onFlagInaccurate?: (tower: CellTower) => void;
 }
 
-export default function TowerDetailModal({ tower, userLat, userLon, onClose, onDismissAll, onFlagInaccurate }: Props) {
+export default function TowerDetailModal({ tower, userLat, userLon, onClose, onFlagInaccurate }: Props) {
   const insets = useSafeAreaInsets();
   const deviceHeading = useCompass();
   const [flagged, setFlagged] = useState(false);
@@ -61,23 +61,30 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onD
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tower]);
 
-  // X button: slide card out, then call onClose (keeps coverage)
-  const handleClose = useCallback(() => {
+  const closeCard = useCallback(() => {
     cardTranslateY.value = withTiming(
-      500,
+      600,
       { duration: 250, easing: Easing.in(Easing.quad) },
       (finished) => { if (finished) runOnJS(onClose)(); },
     );
   }, [onClose, cardTranslateY]);
 
-  // Tap outside card: slide card out, then call onDismissAll (clears coverage too)
-  const handleDismissAll = useCallback(() => {
-    cardTranslateY.value = withTiming(
-      500,
-      { duration: 250, easing: Easing.in(Easing.quad) },
-      (finished) => { if (finished) runOnJS(onDismissAll)(); },
-    );
-  }, [onDismissAll, cardTranslateY]);
+  // Swipe-to-close: card follows finger live, closes on fast/far swipe
+  const swipeGesture = Gesture.Pan()
+    .onUpdate((e) => {
+      cardTranslateY.value = Math.max(0, e.translationY);
+    })
+    .onEnd((e) => {
+      if (e.translationY > 110 || e.velocityY > 700) {
+        cardTranslateY.value = withTiming(
+          600,
+          { duration: 200, easing: Easing.in(Easing.quad) },
+          (finished) => { if (finished) runOnJS(onClose)(); },
+        );
+      } else {
+        cardTranslateY.value = withSpring(0, { damping: 22, stiffness: 280 });
+      }
+    });
 
   const cardAnimStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: cardTranslateY.value }],
@@ -129,17 +136,18 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onD
   };
 
   return (
-    // Transparent Modal: renders above the MapView native layer on all platforms.
-    // The overlay has no background — the map + coverage are visible through it.
-    // Tapping the area above the card calls onDismissAll; X button calls onClose.
-    <Modal visible transparent animationType="none" onRequestClose={handleDismissAll}>
+    // Transparent Modal: map + coverage visible through it.
+    // Tapping above the card closes the sheet only (coverage stays).
+    // Second tap on the map (via MapView.onPress) then closes coverage.
+    <Modal visible transparent animationType="none" onRequestClose={closeCard}>
       <View style={styles.overlay}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={handleDismissAll} />
-        <Animated.View style={[styles.card, { paddingBottom: 28 + insets.bottom }, cardAnimStyle]}>
-          {/* Handle */}
-          <View style={styles.handleWrap}>
-            <View style={styles.handle} />
-          </View>
+        <Pressable style={StyleSheet.absoluteFill} onPress={closeCard} />
+        <GestureDetector gesture={swipeGesture}>
+          <Animated.View style={[styles.card, { paddingBottom: 28 + insets.bottom }, cardAnimStyle]}>
+            {/* Handle — visual cue for swipe */}
+            <View style={styles.handleWrap}>
+              <View style={styles.handle} />
+            </View>
 
           {/* Network badge + carrier + close */}
           <View style={styles.header}>
@@ -166,7 +174,7 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onD
               <Text style={[styles.confInfo, { color: CONFIDENCE_COLOR[conf] }]}>ⓘ</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+            <TouchableOpacity onPress={closeCard} style={styles.closeBtn}>
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
           </View>
@@ -227,7 +235,8 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onD
               <Text style={styles.actionBtnTextPrimary}>↑ Export</Text>
             </TouchableOpacity>
           </View>
-        </Animated.View>
+          </Animated.View>
+        </GestureDetector>
       </View>
     </Modal>
   );
