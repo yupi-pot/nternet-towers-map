@@ -29,8 +29,8 @@ export const RADIO_LABELS: Record<CellTower['radio'], string> = {
 };
 
 export const RADIO_COLORS: Record<CellTower['radio'], string> = {
-  GSM: '#ef4444',   // red
-  UMTS: '#f97316',  // orange
-  LTE: '#22c55e',   // green
-  NR: '#3b82f6',    // blue
+  GSM:  '#f0f0f0',  // white  — 2G
+  UMTS: '#f59e0b',  // amber  — 3G
+  LTE:  '#22c55e',  // green  — 4G
+  NR:   '#a855f7',  // purple — 5G
 };

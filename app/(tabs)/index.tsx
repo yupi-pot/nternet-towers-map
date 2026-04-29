@@ -27,7 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapErrorBoundary } from '@/src/components/MapErrorBoundary';
 import TowerDetailModal from '@/src/components/TowerDetailModal';
-import { TowerMarker } from '@/src/components/TowerMarker';
+import { TowerMarker, TOWER_MARKER_ANCHOR } from '@/src/components/TowerMarker';
 import { useTowersContext } from '@/src/context/TowersContext';
 import { CellTower, RADIO_COLORS } from '@/src/types';
 
@@ -201,7 +201,8 @@ const ClusterMarker = React.memo(function ClusterMarker({
 const SingleRipple = React.memo(function SingleRipple({
   id: _id, x, y, color, maxScale, duration, maxOpacity, staggerMs,
 }: RippleItem) {
-  const scale   = useSharedValue(0.3);
+  // Start just outside the pin edge so the ring always expands outward, never covers the dot.
+  const scale   = useSharedValue(1.1);
   const opacity = useSharedValue(maxOpacity);
 
   useEffect(() => {
@@ -496,7 +497,7 @@ export default function MapTab() {
               coordinate={{ latitude: lat, longitude: lon }}
               tracksViewChanges={false}
               onPress={() => setSelectedTower(tower)}
-              anchor={{ x: 0.5, y: 0.5 }}
+              anchor={TOWER_MARKER_ANCHOR}
             >
               <TowerMarker radio={tower.radio} cellid={tower.cellid} />
             </Marker>,

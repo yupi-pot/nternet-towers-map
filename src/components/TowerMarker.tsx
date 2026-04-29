@@ -7,45 +7,56 @@ const RADIO_SHORT: Record<CellTower['radio'], string> = {
   GSM: '2G', UMTS: '3G', LTE: '4G', NR: '5G',
 };
 
+// Fractional anchor for MapView <Marker>: the dot center sits at ~33% of total height
+// (dot 26px + gap 3px + label ~12px ≈ 41px; 13/41 ≈ 0.32)
+export const TOWER_MARKER_ANCHOR = { x: 0.5, y: 0.33 } as const;
+
 interface Props {
   radio: CellTower['radio'];
-  cellid: number;        // kept for API compat
-  isSelected?: boolean;  // kept for API compat
+  cellid: number;
+  isSelected?: boolean;
 }
 
 export const TowerMarker = React.memo(function TowerMarker({ radio }: Props) {
   const color = RADIO_COLORS[radio] ?? '#8b5cf6';
+  // For the near-white 2G color use a grey border so it stays visible on light maps.
+  const borderColor = radio === 'GSM' ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.85)';
   return (
-    <View style={[
-      styles.pin,
-      { borderColor: color },
-      Platform.OS === 'ios' && { shadowColor: color },
-    ]}>
-      <Text style={[styles.label, { color }]}>{RADIO_SHORT[radio] ?? String(radio)}</Text>
+    <View style={styles.wrapper}>
+      <View style={[
+        styles.dot,
+        { backgroundColor: color, borderColor },
+        Platform.OS === 'ios' && { shadowColor: color === '#f0f0f0' ? '#888' : color },
+      ]} />
+      <Text style={[styles.label, { color: radio === 'GSM' ? '#666' : color }]}>{RADIO_SHORT[radio]}</Text>
     </View>
   );
 });
 
-// Alias kept so existing imports don't need updating.
 export const AnimatedTowerMarker = TowerMarker;
 
 const styles = StyleSheet.create({
-  pin: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 2,
-    backgroundColor: 'rgba(0,0,0,0.82)',
+  wrapper: {
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
+    gap: 3,
+  },
+  dot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2.5,
+    borderColor: 'rgba(255,255,255,0.85)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.7,
     shadowRadius: 8,
     elevation: 5,
   },
   label: {
     fontSize: 8,
     fontWeight: '800',
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(255,255,255,0.9)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
   },
 });
