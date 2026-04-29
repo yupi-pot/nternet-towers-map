@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -99,11 +100,8 @@ function VideoSlide({ isActive, title }: { isActive: boolean; title: string }) {
   });
 
   useEffect(() => {
-    if (isActive) {
-      player.play();
-    } else {
-      player.pause();
-    }
+    if (isActive) player.play();
+    else player.pause();
   }, [isActive, player]);
 
   const insets = useSafeAreaInsets();
@@ -116,9 +114,30 @@ function VideoSlide({ isActive, title }: { isActive: boolean; title: string }) {
         contentFit="cover"
         nativeControls={false}
       />
-      {/* Dark gradient overlay at bottom */}
-      <View style={[styles.videoOverlay, { paddingBottom: insets.bottom + 100 }]}>
+
+      {/* Gradient: transparent top → deep black bottom */}
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.82)', 'rgba(0,0,0,0.96)']}
+        locations={[0.3, 0.55, 0.78, 1]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+
+      {/* Centered text block in the lower portion */}
+      <View style={[styles.videoContent, { paddingBottom: insets.bottom + 116 }]}>
+        {/* Database badge */}
+        <View style={styles.videoBadge}>
+          <View style={styles.videoBadgeDot} />
+          <Text style={styles.videoBadgeText}>OpenCelliD · Updated monthly</Text>
+        </View>
+
+        {/* Main title */}
         <Text style={styles.videoTitle}>{title}</Text>
+
+        {/* Subtitle / DB info */}
+        <Text style={styles.videoSubtitle}>
+          40M+ real-world measurements{'\n'}200+ countries · Confidence-rated
+        </Text>
       </View>
     </View>
   );
@@ -315,20 +334,51 @@ const styles = StyleSheet.create({
     height,
     backgroundColor: '#000',
   },
-  videoOverlay: {
+  videoContent: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
-    paddingHorizontal: 32,
-    background: 'transparent',
+    alignItems: 'center',
+    paddingHorizontal: 28,
+  },
+  videoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    borderRadius: 20,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  videoBadgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#22c55e',
+  },
+  videoBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.85)',
+    letterSpacing: 0.3,
   },
   videoTitle: {
-    fontSize: 38,
-    fontWeight: '900',
+    fontSize: 36,
+    fontWeight: '600',
     color: '#ffffff',
-    letterSpacing: -1,
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    letterSpacing: -0.5,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  videoSubtitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: 'rgba(255,255,255,0.60)',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 40,
   },
   videoTapArea: {
     position: 'absolute',
