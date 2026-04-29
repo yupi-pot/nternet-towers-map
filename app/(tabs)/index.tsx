@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import * as Sentry from '@sentry/react-native';
 import Supercluster from 'supercluster';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -266,6 +268,7 @@ function AnimatedCount({ value, textStyle }: { value: number; textStyle: object 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function MapTab() {
+  const router = useRouter();
   const {
     towers,
     location, locationLoading, locationError,
@@ -291,6 +294,19 @@ export default function MapTab() {
   // Prevents MapView.onPress from clearing coverage on the same tap that opened it
   const markerJustPressedRef   = useRef(false);
   const [isPanning, setIsPanning] = useState(false);
+
+  // Secret: tap title 7× to relaunch onboarding
+  const titleTapCountRef = useRef(0);
+  const titleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleTitleTap = useCallback(() => {
+    titleTapCountRef.current += 1;
+    if (titleTapTimerRef.current) clearTimeout(titleTapTimerRef.current);
+    titleTapTimerRef.current = setTimeout(() => { titleTapCountRef.current = 0; }, 1500);
+    if (titleTapCountRef.current >= 7) {
+      titleTapCountRef.current = 0;
+      SecureStore.deleteItemAsync('hasSeenOnboarding').then(() => router.replace('/onboarding' as never));
+    }
+  }, [router]);
 
   if (towers.length > 0) firstFetchDoneRef.current = true;
 
@@ -611,12 +627,12 @@ export default function MapTab() {
           pointerEvents="none"
         />
         <View style={styles.statusBar} pointerEvents="auto">
-          {/* Title row */}
-          <View style={styles.titleRow}>
+          {/* Title row — tap 7× to relaunch onboarding */}
+          <TouchableOpacity onPress={handleTitleTap} activeOpacity={1} style={styles.titleRow}>
             <Text style={styles.bigTitle}>Found </Text>
             <AnimatedCount value={displayCount} textStyle={styles.bigTitleCount} />
             <Text style={styles.bigTitle}> towers</Text>
-          </View>
+          </TouchableOpacity>
 
           {/* Filter pills — single line, styled like list tab */}
           <View style={styles.chipRow}>
