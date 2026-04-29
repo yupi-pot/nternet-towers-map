@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   countBadge: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#3b82f6',
+    color: '#9ca3af',
     marginTop: 4,
   },
   filterRow: {
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   carrierName: { fontSize: 15, fontWeight: '600', color: '#1c1c1e' },
   rowSub: { fontSize: 12, color: '#8e8e93', marginTop: 2 },
   rowRight: { alignItems: 'flex-end', gap: 5 },
-  distance: { fontSize: 13, fontWeight: '600', color: '#3b82f6' },
+  distance: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
 
   // ── Shared badge / confidence ──
   badge: {
