@@ -247,16 +247,16 @@ export default function MapTab() {
         onPanDrag={handlePanDrag}
         showsUserLocation
       >
-        {!tooZoomedOut && !tooManyMarkers && clusters.map((item) => {
+        {!tooZoomedOut && !tooManyMarkers && clusters.flatMap((item) => {
           const [lon, lat] = item.geometry.coordinates;
-          if (!isFinite(lat) || !isFinite(lon)) return null;
+          if (!isFinite(lat) || !isFinite(lon)) return [];
 
           const isCluster = item.properties.cluster;
 
           if (isCluster) {
             const { cluster_id, point_count } = item.properties as Supercluster.ClusterProperties;
-            if (!isFinite(cluster_id) || !isFinite(point_count)) return null;
-            return (
+            if (!isFinite(cluster_id) || !isFinite(point_count)) return [];
+            return [
               <ClusterMarker
                 key={`cluster-${cluster_id}`}
                 lat={lat}
@@ -271,23 +271,23 @@ export default function MapTab() {
                     300,
                   );
                 }}
-              />
-            );
+              />,
+            ];
           }
 
           const { tower } = item.properties as { tower: CellTower };
-          if (!tower) return null;
-          return (
+          if (!tower) return [];
+          return [
             <Marker
               key={`${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`}
               coordinate={{ latitude: lat, longitude: lon }}
               pinColor={RADIO_COLORS[tower.radio] ?? '#8b5cf6'}
               tracksViewChanges={false}
               onPress={() => setSelectedTower(tower)}
-              title={RADIO_LABELS[tower.radio] ?? tower.radio}
+              title={RADIO_LABELS[tower.radio] ?? String(tower.radio ?? '')}
               description={`Cell ID: ${tower.cellid}`}
-            />
-          );
+            />,
+          ];
         })}
       </MapView>
 
