@@ -99,11 +99,18 @@ function jitter(seed: number): number {
   return (x - Math.floor(x) - 0.5) * 0.0006;
 }
 
-// Convert lat/lon to screen pixel using linear approximation (accurate at city zoom).
+// Convert lat/lon to screen pixel using Web Mercator (matches MapView/MapKit/Google Maps).
+// Longitude is linear; latitude uses the mercator ln(tan) formula.
 function coordToScreen(lat: number, lon: number, region: Region, w: number, h: number) {
+  const toMercY = (latDeg: number) =>
+    Math.log(Math.tan(Math.PI / 4 + (latDeg * Math.PI) / 360));
+  const centerMY = toMercY(region.latitude);
+  const spanMY =
+    toMercY(region.latitude + region.latitudeDelta / 2) -
+    toMercY(region.latitude - region.latitudeDelta / 2);
   return {
     x: ((lon - region.longitude) / region.longitudeDelta + 0.5) * w,
-    y: (0.5 - (lat - region.latitude) / region.latitudeDelta) * h,
+    y: (0.5 - (toMercY(lat) - centerMY) / spanMY) * h,
   };
 }
 
