@@ -241,6 +241,7 @@ export default function MapTab() {
               key={`${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`}
               coordinate={{ latitude: lat, longitude: lon }}
               pinColor={RADIO_COLORS[tower.radio] ?? '#8b5cf6'}
+              tracksViewChanges={false}
               onPress={() => setSelectedTower(tower)}
               title={RADIO_LABELS[tower.radio]}
               description={`Cell ID: ${tower.cellid}`}
