@@ -5,7 +5,7 @@ import Supercluster from 'supercluster';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  LayoutChangeEvent,
+
   Platform,
   StyleSheet,
   Text,
@@ -57,7 +57,7 @@ interface RippleItem {
   id: string; x: number; y: number;
   color: string; maxScale: number; duration: number; maxOpacity: number; staggerMs: number;
 }
-interface MapLayout { width: number; height: number }
+
 
 // ─── Supercluster ─────────────────────────────────────────────────────────────
 
@@ -99,20 +99,6 @@ function jitter(seed: number): number {
   return (x - Math.floor(x) - 0.5) * 0.0006;
 }
 
-// Convert lat/lon to screen pixel using Web Mercator (matches MapView/MapKit/Google Maps).
-// Longitude is linear; latitude uses the mercator ln(tan) formula.
-function coordToScreen(lat: number, lon: number, region: Region, w: number, h: number) {
-  const toMercY = (latDeg: number) =>
-    Math.log(Math.tan(Math.PI / 4 + (latDeg * Math.PI) / 360));
-  const centerMY = toMercY(region.latitude);
-  const spanMY =
-    toMercY(region.latitude + region.latitudeDelta / 2) -
-    toMercY(region.latitude - region.latitudeDelta / 2);
-  return {
-    x: ((lon - region.longitude) / region.longitudeDelta + 0.5) * w,
-    y: (0.5 - (toMercY(lat) - centerMY) / spanMY) * h,
-  };
-}
 
 // Return the radio type with the highest count (prefer higher-gen on tie).
 function dominantRadio(counts: ClusterRadioCounts): CellTower['radio'] {
@@ -293,7 +279,7 @@ export default function MapTab() {
   const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
   const [hasPanned,     setHasPanned]     = useState(false);
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
-  const [mapLayout,     setMapLayout]     = useState<MapLayout>({ width: 0, height: 0 });
+  const [markerPositions, setMarkerPositions] = useState<Record<string, { x: number; y: number }>>({});
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef            = useRef<any>(null);
@@ -346,9 +332,7 @@ export default function MapTab() {
       setIsPanning(true);
     }
   }, []);
-  const handleMapLayout = useCallback((e: LayoutChangeEvent) => {
-    setMapLayout(e.nativeEvent.layout);
-  }, []);
+
 
   const handleRegionChangeComplete = useCallback((region: Region) => {
     mapRegionRef.current = region;
@@ -365,6 +349,43 @@ export default function MapTab() {
       500,
     );
   }, [location]);
+
+  // Ask MapView for the exact screen point for every visible cluster/tower.
+  // This eliminates all manual projection math and gives pixel-perfect alignment.
+  useEffect(() => {
+    if (!mapRef.current || isPanning || !currentRegion) return;
+    const zoom = regionToZoom(currentRegion);
+    if (zoom < MIN_ZOOM || clusters.length > MAX_MARKERS) {
+      setMarkerPositions({});
+      return;
+    }
+    let cancelled = false;
+    Promise.all(
+      clusters.map(async (item) => {
+        const [lon, lat] = item.geometry.coordinates;
+        if (!isFinite(lat) || !isFinite(lon)) return null;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const point = await (mapRef.current as any).pointForCoordinate({ latitude: lat, longitude: lon });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const isCluster = (item.properties as any).cluster;
+          const key = isCluster
+            ? `c${(item.properties as Supercluster.ClusterProperties).cluster_id}`
+            : `t${((item.properties as { tower: CellTower }).tower)?.cellid}`;
+          return key ? { key, point } : null;
+        } catch {
+          return null;
+        }
+      }),
+    ).then((results) => {
+      if (cancelled) return;
+      const positions: Record<string, { x: number; y: number }> = {};
+      results.forEach((r) => r && (positions[r.key] = r.point));
+      setMarkerPositions(positions);
+    });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clusters, currentRegion, isPanning]);
 
   const filteredTowers = useMemo(
     () => towers.filter((t) => mapFilters.has(t.radio)),
@@ -391,37 +412,39 @@ export default function MapTab() {
     return supercluster.getClusters(regionToBBox(region), regionToZoom(region));
   }, [clusterPoints, currentRegion, mapRegionRef]);
 
-  // Compute ripple overlay items for ALL visible individual towers and clusters.
-  // Uses synchronous linear approximation for lat/lon → screen pixels (accurate at city zoom).
+  // Ripple overlay items — positions come from pointForCoordinate (exact map projection).
   const rippleItems = useMemo<RippleItem[]>(() => {
-    if (isPanning || !currentRegion || !mapLayout.width) return [];
+    if (isPanning || !currentRegion || !Object.keys(markerPositions).length) return [];
     const zoom = regionToZoom(currentRegion);
     if (zoom < MIN_ZOOM || clusters.length > MAX_MARKERS) return [];
 
-    const { width, height } = mapLayout;
     const items: RippleItem[] = [];
 
     for (const item of clusters) {
-      const [lon, lat] = item.geometry.coordinates;
-      if (!isFinite(lat) || !isFinite(lon)) continue;
-      const { x, y } = coordToScreen(lat, lon, currentRegion, width, height);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((item.properties as any).cluster) {
+      const isCluster = (item.properties as any).cluster;
+      const key = isCluster
+        ? `c${(item.properties as Supercluster.ClusterProperties).cluster_id}`
+        : `t${((item.properties as { tower: CellTower }).tower)?.cellid}`;
+      const pos = key ? markerPositions[key] : undefined;
+      if (!pos) continue;
+
+      if (isCluster) {
         const { cluster_id, point_count } = item.properties as Supercluster.ClusterProperties;
         const counts = item.properties as unknown as ClusterRadioCounts;
         const dom = dominantRadio({ gsm: counts.gsm ?? 0, umts: counts.umts ?? 0, lte: counts.lte ?? 0, nr: counts.nr ?? 0 });
         const cfg = RIPPLE_CONFIG[dom];
-        items.push({ id: `c${cluster_id}`, x, y, color: RADIO_COLORS[dom], ...cfg, staggerMs: (cluster_id % 8) * 300 });
-        void point_count; // suppress unused warning
+        items.push({ id: `c${cluster_id}`, x: pos.x, y: pos.y, color: RADIO_COLORS[dom], ...cfg, staggerMs: (cluster_id % 8) * 300 });
+        void point_count;
       } else {
         const { tower } = item.properties as { tower: CellTower };
         if (!tower) continue;
         const cfg = RIPPLE_CONFIG[tower.radio];
-        items.push({ id: `t${tower.cellid}`, x, y, color: RADIO_COLORS[tower.radio], ...cfg, staggerMs: (tower.cellid % 8) * 300 });
+        items.push({ id: `t${tower.cellid}`, x: pos.x, y: pos.y, color: RADIO_COLORS[tower.radio], ...cfg, staggerMs: (tower.cellid % 8) * 300 });
       }
     }
     return items;
-  }, [isPanning, clusters, currentRegion, mapLayout]);
+  }, [isPanning, clusters, currentRegion, markerPositions]);
 
   const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
   const radioCounts = useMemo(() => {
@@ -471,7 +494,7 @@ export default function MapTab() {
         }}
         onRegionChangeComplete={handleRegionChangeComplete}
         onPanDrag={handlePanDrag}
-        onLayout={handleMapLayout}
+
         showsUserLocation
       >
         {!tooZoomedOut && !tooManyMarkers && clusters.flatMap((item) => {
@@ -668,7 +691,7 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   saturationOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 150, 0, 0.10)',
+    backgroundColor: 'rgba(255, 150, 0, 0.15)',
   },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, backgroundColor: '#f8fafc' },
   centeredText: { fontSize: 15, color: '#64748b' },
