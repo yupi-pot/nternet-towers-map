@@ -159,7 +159,7 @@ const ClusterPie = React.memo(function ClusterPie({
           return <Path key={radio} d={d} fill={RADIO_COLORS[radio]} />;
         })
       )}
-      <Circle cx={CX} cy={CY} r={ri} fill="rgba(5,5,5,0.88)" />
+      <Circle cx={CX} cy={CY} r={ri} fill="#f0b429" />
       <SvgText
         x={CX} y={CY + 4}
         textAnchor="middle"
