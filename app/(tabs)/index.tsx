@@ -331,6 +331,14 @@ export default function MapTab() {
     }
   }, []);
 
+  // Fires for ALL map movement (user or programmatic) — clears ripples while map is in motion
+  const handleRegionChange = useCallback(() => {
+    if (!isPanningRef.current) {
+      isPanningRef.current = true;
+      setIsPanning(true);
+    }
+  }, []);
+
 
   const handleRegionChangeComplete = useCallback((region: Region) => {
     mapRegionRef.current = region;
@@ -513,6 +521,7 @@ export default function MapTab() {
           longitudeDelta: 0.015,
         }}
         userInterfaceStyle="light"
+        onRegionChange={handleRegionChange}
         onRegionChangeComplete={handleRegionChangeComplete}
         onPanDrag={handlePanDrag}
         onPress={() => {
