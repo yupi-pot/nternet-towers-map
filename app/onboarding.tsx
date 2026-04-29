@@ -128,7 +128,7 @@ function VideoSlide({ isActive, title }: { isActive: boolean; title: string }) {
         {/* Database badge */}
         <View style={styles.videoBadge}>
           <View style={styles.videoBadgeDot} />
-          <Text style={styles.videoBadgeText}>OpenCelliD · Updated monthly</Text>
+          <Text style={styles.videoBadgeText}>4.5M towers · updated 1 day ago</Text>
         </View>
 
         {/* Main title */}
@@ -136,7 +136,7 @@ function VideoSlide({ isActive, title }: { isActive: boolean; title: string }) {
 
         {/* Subtitle / DB info */}
         <Text style={styles.videoSubtitle}>
-          40M+ real-world measurements{'\n'}200+ countries · Confidence-rated
+          Real tower locations in 200+ countries{'\n'}Confidence-rated from real measurements
         </Text>
       </View>
     </View>
@@ -265,9 +265,9 @@ export default function OnboardingScreen() {
       {/* Bottom controls — hidden on video slide (tap to advance) */}
       {isVideoSlide ? (
         <TouchableOpacity
-          style={[styles.videoTapArea, { bottom: insets.bottom + 32 }]}
+          style={[styles.videoTapArea, { bottom: insets.bottom + 28, left: 24, right: 24 }]}
           onPress={handleNext}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
           <View style={styles.videoNextBtn}>
             <Text style={styles.videoNextText}>Get Started →</Text>
@@ -382,21 +382,18 @@ const styles = StyleSheet.create({
   },
   videoTapArea: {
     position: 'absolute',
-    alignSelf: 'center',
   },
   videoNextBtn: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.55)',
-    borderRadius: 28,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
   },
   videoNextText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#ffffff',
-    letterSpacing: 0.2,
+    color: '#111827',
+    letterSpacing: 0.1,
   },
 
   // ── Icon slide ──
