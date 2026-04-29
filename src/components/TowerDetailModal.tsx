@@ -4,7 +4,7 @@ import {
   writeAsStringAsync,
 } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -14,6 +14,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { getCarrierName } from '@/src/utils/carrierNames';
 import {
@@ -40,6 +47,29 @@ interface Props {
 export default function TowerDetailModal({ tower, userLat, userLon, onClose, onFlagInaccurate }: Props) {
   const deviceHeading = useCompass();
   const [flagged, setFlagged] = useState(false);
+
+  const overlayOpacity = useSharedValue(0);
+  const cardTranslateY = useSharedValue(400);
+
+  useEffect(() => {
+    if (tower) {
+      overlayOpacity.value = withTiming(1, { duration: 220 });
+      cardTranslateY.value = withTiming(0, { duration: 320, easing: Easing.out(Easing.cubic) });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tower]);
+
+  const handleClose = useCallback(() => {
+    overlayOpacity.value = withTiming(0, { duration: 200 });
+    cardTranslateY.value = withTiming(
+      400,
+      { duration: 250, easing: Easing.in(Easing.quad) },
+      (finished) => { if (finished) runOnJS(onClose)(); },
+    );
+  }, [onClose, overlayOpacity, cardTranslateY]);
+
+  const overlayAnimStyle = useAnimatedStyle(() => ({ opacity: overlayOpacity.value }));
+  const cardAnimStyle = useAnimatedStyle(() => ({ transform: [{ translateY: cardTranslateY.value }] }));
 
   if (!tower) return null;
 
@@ -94,9 +124,10 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
   };
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-        <Pressable style={styles.overlay} onPress={onClose}>
-          <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
+    <Modal visible transparent animationType="none" onRequestClose={handleClose}>
+      <Animated.View style={[styles.overlay, overlayAnimStyle]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+        <Animated.View style={[styles.card, cardAnimStyle]}>
             {/* Handle */}
             <View style={styles.handleWrap}>
               <View style={styles.handle} />
@@ -119,7 +150,7 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
                 </Text>
               </View>
 
-              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+              <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
                 <Text style={styles.closeBtnText}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -190,9 +221,9 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
                 <Text style={styles.actionBtnTextPrimary}>↑ Export</Text>
               </TouchableOpacity>
             </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
   );
 }
 
