@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapErrorBoundary } from '@/src/components/MapErrorBoundary';
 import TowerDetailModal from '@/src/components/TowerDetailModal';
+import { AnimatedTowerMarker, TowerMarker } from '@/src/components/TowerMarker';
 import { useTowersContext } from '@/src/context/TowersContext';
 import { CellTower, RADIO_COLORS, RADIO_LABELS } from '@/src/types';
 
@@ -277,16 +278,20 @@ export default function MapTab() {
 
           const { tower } = item.properties as { tower: CellTower };
           if (!tower) return [];
+          const isSelected = selectedTower?.cellid === tower.cellid;
           return [
             <Marker
               key={`${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`}
               coordinate={{ latitude: lat, longitude: lon }}
-              pinColor={RADIO_COLORS[tower.radio] ?? '#8b5cf6'}
-              tracksViewChanges={false}
+              tracksViewChanges={isSelected}
               onPress={() => setSelectedTower(tower)}
-              title={RADIO_LABELS[tower.radio] ?? String(tower.radio ?? '')}
-              description={`Cell ID: ${tower.cellid}`}
-            />,
+              anchor={{ x: 0.5, y: 0.5 }}
+            >
+              {isSelected
+                ? <AnimatedTowerMarker radio={tower.radio} cellid={tower.cellid} />
+                : <TowerMarker radio={tower.radio} cellid={tower.cellid} />
+              }
+            </Marker>,
           ];
         })}
       </MapView>
