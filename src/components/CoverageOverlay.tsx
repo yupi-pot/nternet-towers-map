@@ -45,15 +45,18 @@ export default function CoverageOverlay({ tower }: { tower: CellTower }) {
   // Terrain-aware polygons — viewshed-clipped rings
   return (
     <>
-      {coverage.rings.map((ring, i) => (
-        <Polygon
-          key={`rg${i}`}
-          coordinates={ring.coordinates}
-          fillColor={hexRgba(color, FILL_OPACITIES[i])}
-          strokeColor={hexRgba(color, STROKE_OPACITIES[i])}
-          strokeWidth={STROKE_WIDTHS[i]}
-        />
-      ))}
+      {coverage.rings.map((ring, i) => {
+        const si = Math.min(i, FILL_OPACITIES.length - 1);
+        return (
+          <Polygon
+            key={`rg${i}`}
+            coordinates={ring.coordinates}
+            fillColor={hexRgba(color, FILL_OPACITIES[si])}
+            strokeColor={hexRgba(color, STROKE_OPACITIES[si])}
+            strokeWidth={STROKE_WIDTHS[si]}
+          />
+        );
+      })}
     </>
   );
 }
