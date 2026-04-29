@@ -69,6 +69,8 @@ export default function MapTab() {
     locationError,
     mapRegionRef,
     refreshCurrentRegion,
+    dataSource,
+    setDataSource,
   } = useTowersContext();
 
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
@@ -324,6 +326,21 @@ export default function MapTab() {
         </TouchableOpacity>
       )}
 
+      {/* ── Data source switcher (debug) ── */}
+      {__DEV__ && (
+        <TouchableOpacity
+          style={styles.dataSourceBtn}
+          onPress={() => setDataSource(dataSource === 'opencellid' ? 'supabase' : 'opencellid')}
+          activeOpacity={0.75}
+        >
+          <GlassView style={[styles.dataSourcePill, dataSource === 'supabase' && styles.dataSourcePillActive]}>
+            <Text style={[styles.dataSourceText, dataSource === 'supabase' && styles.dataSourceTextActive]}>
+              {dataSource === 'supabase' ? 'SB' : 'OC'}
+            </Text>
+          </GlassView>
+        </TouchableOpacity>
+      )}
+
       {/* ── My location ── */}
       <TouchableOpacity style={styles.locationBtnWrap} onPress={handleMyLocation} activeOpacity={0.75}>
         <GlassView style={styles.iconBtn}>
@@ -400,4 +417,9 @@ const styles = StyleSheet.create({
 
   locationBtnWrap: { position: 'absolute', bottom: 108, right: 14 },
   sentryDebugBtn: { position: 'absolute', bottom: 160, right: 14 },
+  dataSourceBtn: { position: 'absolute', bottom: 212, right: 14 },
+  dataSourcePill: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 18 },
+  dataSourcePillActive: { backgroundColor: 'rgba(34,197,94,0.15)' },
+  dataSourceText: { fontSize: 11, fontWeight: '800', color: '#6b7280', letterSpacing: 0.3 },
+  dataSourceTextActive: { color: '#16a34a' },
 });

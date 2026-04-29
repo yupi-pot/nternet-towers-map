@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { CellTower } from '../types';
 import { fetchTowers, ViewportBBox } from '../api/opencellid';
+import { fetchTowersFromSupabase } from '../api/supabase';
+import { DataSource } from '../context/DataSourceContext';
 
 interface UseTowersResult {
   towers: CellTower[];
@@ -9,7 +11,11 @@ interface UseTowersResult {
   error: string | null;
 }
 
-export function useTowers(bbox: ViewportBBox | null, fetchKey: number): UseTowersResult {
+export function useTowers(
+  bbox: ViewportBBox | null,
+  fetchKey: number,
+  dataSource: DataSource = 'opencellid'
+): UseTowersResult {
   const [towers, setTowers] = useState<CellTower[]>([]);
   const [fetchedBBox, setFetchedBBox] = useState<ViewportBBox | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,9 +38,11 @@ export function useTowers(bbox: ViewportBBox | null, fetchKey: number): UseTower
     setIsLoading(true);
 
     timerRef.current = setTimeout(async () => {
-      const { towers: result, fetchedBBox: resultBBox } = await fetchTowers({
-        minLat, maxLat, minLon, maxLon,
-      });
+      const bboxArg = { minLat, maxLat, minLon, maxLon };
+      const fetcher =
+        dataSource === 'supabase' ? fetchTowersFromSupabase : fetchTowers;
+
+      const { towers: result, fetchedBBox: resultBBox } = await fetcher(bboxArg);
 
       if (result.length === 0) {
         setError('No towers found');
@@ -50,7 +58,7 @@ export function useTowers(bbox: ViewportBBox | null, fetchKey: number): UseTower
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [minLat, maxLat, minLon, maxLon, fetchKey]);
+  }, [minLat, maxLat, minLon, maxLon, fetchKey, dataSource]);
 
   return { towers, fetchedBBox, isLoading, error };
 }

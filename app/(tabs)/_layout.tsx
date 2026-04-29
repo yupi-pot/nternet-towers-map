@@ -1,9 +1,11 @@
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 
+import { DataSourceProvider } from '@/src/context/DataSourceContext';
 import { TowersProvider } from '@/src/context/TowersContext';
 
 export default function TabLayout() {
   return (
+    <DataSourceProvider>
     <TowersProvider>
       <NativeTabs tintColor="#3b82f6">
         <NativeTabs.Trigger name="index">
@@ -16,5 +18,6 @@ export default function TabLayout() {
         </NativeTabs.Trigger>
       </NativeTabs>
     </TowersProvider>
+    </DataSourceProvider>
   );
 }
