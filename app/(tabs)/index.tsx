@@ -174,19 +174,23 @@ const ClusterPie = React.memo(function ClusterPie({
 });
 
 const ClusterMarker = React.memo(function ClusterMarker({
-  lat, lon, clusterId, pointCount, counts, onPress,
+  lat, lon, clusterId, pointCount, counts, onPress, minimized, tracksViewChanges,
 }: {
   lat: number; lon: number; clusterId: number; pointCount: number;
   counts: ClusterRadioCounts; onPress: () => void;
+  minimized?: boolean; tracksViewChanges?: boolean;
 }) {
   return (
     <Marker
       coordinate={{ latitude: lat, longitude: lon }}
-      tracksViewChanges={false}
+      tracksViewChanges={tracksViewChanges ?? false}
       onPress={onPress}
     >
       <View collapsable={false}>
-        <ClusterPie counts={counts} total={pointCount} />
+        {minimized
+          ? <View style={styles.clusterDot} />
+          : <ClusterPie counts={counts} total={pointCount} />
+        }
       </View>
     </Marker>
   );
@@ -578,6 +582,8 @@ export default function MapTab() {
                   gsm: counts.gsm ?? 0, umts: counts.umts ?? 0,
                   lte: counts.lte ?? 0, nr:   counts.nr   ?? 0,
                 }}
+                minimized={coverageTower !== null}
+                tracksViewChanges={trackingMarkers}
                 onPress={() => {
                   const expansionZoom = scRef.current.getClusterExpansionZoom(cluster_id);
                   const delta = 360 / Math.pow(2, expansionZoom);
@@ -604,7 +610,12 @@ export default function MapTab() {
               <TowerMarker
                 radio={tower.radio}
                 cellid={tower.cellid}
-                minimized={coverageTower !== null && tower.cellid !== coverageTower.cellid}
+                minimized={coverageTower !== null && !(
+                  tower.mcc === coverageTower.mcc &&
+                  tower.mnc === coverageTower.mnc &&
+                  tower.lac === coverageTower.lac &&
+                  tower.cellid === coverageTower.cellid
+                )}
               />
             </Marker>,
           ];
@@ -729,6 +740,7 @@ const SHADOW = {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
+  clusterDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(120,120,120,0.5)' },
   saturationOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 150, 0, 0.10)',
