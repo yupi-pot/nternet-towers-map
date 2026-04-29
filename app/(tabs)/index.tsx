@@ -4,6 +4,7 @@ import Supercluster from 'supercluster';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  LayoutChangeEvent,
   Platform,
   StyleSheet,
   Text,
@@ -18,6 +19,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,17 +27,56 @@ import { MapErrorBoundary } from '@/src/components/MapErrorBoundary';
 import TowerDetailModal from '@/src/components/TowerDetailModal';
 import { TowerMarker } from '@/src/components/TowerMarker';
 import { useTowersContext } from '@/src/context/TowersContext';
-import { CellTower, RADIO_COLORS, RADIO_LABELS } from '@/src/types';
+import { CellTower, RADIO_COLORS } from '@/src/types';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const ALL_RADIOS: CellTower['radio'][] = ['GSM', 'UMTS', 'LTE', 'NR'];
 const RADIO_SHORT: Record<CellTower['radio'], string> = {
   GSM: '2G', UMTS: '3G', LTE: '4G', NR: '5G',
 };
 
-const supercluster = new Supercluster({ radius: 40, maxZoom: 16 });
+const MIN_ZOOM     = 9;   // below this: skip markers, show overlay
+const MAX_MARKERS  = 500; // above this cluster count: warn to zoom in
+const RIPPLE_BASE  = 28;  // base ring diameter matching the pin size
 
-const MIN_ZOOM = 9;     // below this zoom level: skip markers, show overlay
-const MAX_MARKERS = 500; // above this cluster count: warn user to zoom in
+// Pulse config per radio type: 2G is subtle, 5G is wide and fast
+const RIPPLE_CONFIG: Record<CellTower['radio'], { maxScale: number; duration: number; maxOpacity: number }> = {
+  GSM:  { maxScale: 1.4, duration: 3500, maxOpacity: 0.30 },
+  UMTS: { maxScale: 1.6, duration: 3000, maxOpacity: 0.40 },
+  LTE:  { maxScale: 1.8, duration: 2600, maxOpacity: 0.52 },
+  NR:   { maxScale: 2.2, duration: 2000, maxOpacity: 0.68 },
+};
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface ClusterRadioCounts { gsm: number; umts: number; lte: number; nr: number }
+interface RippleItem {
+  id: string; x: number; y: number;
+  color: string; maxScale: number; duration: number; maxOpacity: number; staggerMs: number;
+}
+interface MapLayout { width: number; height: number }
+
+// ─── Supercluster ─────────────────────────────────────────────────────────────
+
+const supercluster = new Supercluster<{ tower: CellTower }, ClusterRadioCounts>({
+  radius: 40,
+  maxZoom: 16,
+  map: (props) => ({
+    gsm:  props.tower.radio === 'GSM'  ? 1 : 0,
+    umts: props.tower.radio === 'UMTS' ? 1 : 0,
+    lte:  props.tower.radio === 'LTE'  ? 1 : 0,
+    nr:   props.tower.radio === 'NR'   ? 1 : 0,
+  }),
+  reduce: (acc, props) => {
+    acc.gsm  += props.gsm;
+    acc.umts += props.umts;
+    acc.lte  += props.lte;
+    acc.nr   += props.nr;
+  },
+});
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function regionToZoom(region: Region): number {
   return Math.round(Math.log(360 / region.longitudeDelta) / Math.LN2);
@@ -44,25 +85,101 @@ function regionToZoom(region: Region): number {
 function regionToBBox(region: Region): [number, number, number, number] {
   return [
     region.longitude - region.longitudeDelta / 2,
-    region.latitude - region.latitudeDelta / 2,
+    region.latitude  - region.latitudeDelta  / 2,
     region.longitude + region.longitudeDelta / 2,
-    region.latitude + region.latitudeDelta / 2,
+    region.latitude  + region.latitudeDelta  / 2,
   ];
 }
 
 // Deterministic jitter to break collinear tower coordinates from rounded DB data.
-// Uses a simple hash of cellid so the same tower always gets the same offset.
-// ±0.0003° ≈ ±30 m — imperceptible at city scale, eliminates straight-line clusters.
 function jitter(seed: number): number {
   const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
   return (x - Math.floor(x) - 0.5) * 0.0006;
 }
 
+// Convert lat/lon to screen pixel using linear approximation (accurate at city zoom).
+function coordToScreen(lat: number, lon: number, region: Region, w: number, h: number) {
+  return {
+    x: ((lon - region.longitude) / region.longitudeDelta + 0.5) * w,
+    y: (0.5 - (lat - region.latitude) / region.latitudeDelta) * h,
+  };
+}
+
+// Return the radio type with the highest count (prefer higher-gen on tie).
+function dominantRadio(counts: ClusterRadioCounts): CellTower['radio'] {
+  const entries: [CellTower['radio'], number][] = [
+    ['NR', counts.nr], ['LTE', counts.lte], ['UMTS', counts.umts], ['GSM', counts.gsm],
+  ];
+  return entries.find(([, n]) => n > 0)?.[0] ?? 'LTE';
+}
+
+// ─── SVG donut helpers ────────────────────────────────────────────────────────
+
+function polarXY(cx: number, cy: number, r: number, angleDeg: number) {
+  const rad = (angleDeg - 90) * (Math.PI / 180);
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function donutArc(cx: number, cy: number, R: number, r: number, startDeg: number, endDeg: number): string {
+  const sweep = endDeg - startDeg;
+  if (sweep >= 359.9) {
+    // Full ring: SVG can't draw a 360° arc in one path; split into two halves
+    const t  = polarXY(cx, cy, R, 0);   const b  = polarXY(cx, cy, R, 180);
+    const ti = polarXY(cx, cy, r, 0);   const bi = polarXY(cx, cy, r, 180);
+    return [
+      `M ${t.x} ${t.y} A ${R} ${R} 0 1 1 ${b.x} ${b.y} A ${R} ${R} 0 1 1 ${t.x} ${t.y}`,
+      `M ${ti.x} ${ti.y} A ${r} ${r} 0 1 0 ${bi.x} ${bi.y} A ${r} ${r} 0 1 0 ${ti.x} ${ti.y} Z`,
+    ].join(' ');
+  }
+  const largeArc = sweep > 180 ? 1 : 0;
+  const s = polarXY(cx, cy, R, startDeg); const e = polarXY(cx, cy, R, endDeg);
+  const si = polarXY(cx, cy, r, startDeg); const ei = polarXY(cx, cy, r, endDeg);
+  return `M ${s.x} ${s.y} A ${R} ${R} 0 ${largeArc} 1 ${e.x} ${e.y} L ${ei.x} ${ei.y} A ${r} ${r} 0 ${largeArc} 0 ${si.x} ${si.y} Z`;
+}
+
+// ─── Components ───────────────────────────────────────────────────────────────
+
+const ClusterPie = React.memo(function ClusterPie({
+  counts, total,
+}: { counts: ClusterRadioCounts; total: number }) {
+  const segs = (
+    [['GSM', counts.gsm], ['UMTS', counts.umts], ['LTE', counts.lte], ['NR', counts.nr]] as [CellTower['radio'], number][]
+  ).filter(([, n]) => n > 0);
+
+  const CX = 22, CY = 22, R = 19, ri = 12;
+  let deg = 0;
+
+  return (
+    <Svg width={44} height={44}>
+      {segs.length === 1 ? (
+        <Circle cx={CX} cy={CY} r={R} fill={RADIO_COLORS[segs[0][0]]} />
+      ) : (
+        segs.map(([radio, count]) => {
+          const sweep = (count / total) * 360;
+          const d = donutArc(CX, CY, R, ri, deg, deg + sweep);
+          deg += sweep;
+          return <Path key={radio} d={d} fill={RADIO_COLORS[radio]} />;
+        })
+      )}
+      <Circle cx={CX} cy={CY} r={ri} fill="rgba(5,5,5,0.88)" />
+      <SvgText
+        x={CX} y={CY + 4}
+        textAnchor="middle"
+        fill="#ffffff"
+        fontSize={11}
+        fontWeight="bold"
+      >
+        {total > 999 ? `${Math.round(total / 1000)}k` : String(total)}
+      </SvgText>
+    </Svg>
+  );
+});
+
 const ClusterMarker = React.memo(function ClusterMarker({
-  lat, lon, clusterId, pointCount, onPress,
+  lat, lon, clusterId, pointCount, counts, onPress,
 }: {
   lat: number; lon: number; clusterId: number; pointCount: number;
-  onPress: () => void;
+  counts: ClusterRadioCounts; onPress: () => void;
 }) {
   return (
     <Marker
@@ -70,79 +187,69 @@ const ClusterMarker = React.memo(function ClusterMarker({
       tracksViewChanges={false}
       onPress={onPress}
     >
-      <View collapsable={false} style={styles.cluster}>
-        <Text style={styles.clusterText}>{pointCount}</Text>
+      <View collapsable={false}>
+        <ClusterPie counts={counts} total={pointCount} />
       </View>
     </Marker>
   );
 });
 
-// Renders ripple rings as a map overlay (sibling to MapView, not inside Marker).
-// This lets Reanimated run freely without touching Marker props or Fabric state.
-const SelectedTowerRipple = React.memo(function SelectedTowerRipple({
-  x, y, color,
-}: { x: number; y: number; color: string }) {
-  const scale1   = useSharedValue(0.4);
-  const opacity1 = useSharedValue(0.7);
-  const scale2   = useSharedValue(0.4);
-  const opacity2 = useSharedValue(0.7);
+// Ripple ring for a single tower or cluster — rendered as absolute overlay sibling to MapView.
+// Runs entirely outside Marker/Fabric so Reanimated can animate freely.
+const SingleRipple = React.memo(function SingleRipple({
+  id: _id, x, y, color, maxScale, duration, maxOpacity, staggerMs,
+}: RippleItem) {
+  const scale   = useSharedValue(0.3);
+  const opacity = useSharedValue(maxOpacity);
 
   useEffect(() => {
-    const cfg = { duration: 2400, easing: Easing.out(Easing.ease) };
-    scale1.value   = withRepeat(withTiming(1.8, cfg), -1, false);
-    opacity1.value = withRepeat(withTiming(0, cfg), -1, false);
-    scale2.value   = withDelay(900, withRepeat(withTiming(1.8, cfg), -1, false));
-    opacity2.value = withDelay(900, withRepeat(withTiming(0, cfg), -1, false));
+    const cfg = { duration, easing: Easing.out(Easing.ease) };
+    scale.value   = withDelay(staggerMs, withRepeat(withTiming(maxScale, cfg), -1, false));
+    opacity.value = withDelay(staggerMs, withRepeat(withTiming(0,        cfg), -1, false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const ring1 = useAnimatedStyle(() => ({ transform: [{ scale: scale1.value }], opacity: opacity1.value }));
-  const ring2 = useAnimatedStyle(() => ({ transform: [{ scale: scale2.value }], opacity: opacity2.value }));
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity:   opacity.value,
+  }));
 
   return (
-    <View style={[styles.rippleWrap, { left: x - 22, top: y - 22 }]} pointerEvents="none">
-      <Animated.View style={[styles.rippleRing, { borderColor: color }, ring1]} />
-      <Animated.View style={[styles.rippleRing, { borderColor: color }, ring2]} />
+    <View
+      style={{ position: 'absolute', left: x - RIPPLE_BASE / 2, top: y - RIPPLE_BASE / 2 }}
+      pointerEvents="none"
+    >
+      <Animated.View style={[styles.rippleRing, { borderColor: color }, animStyle]} />
     </View>
   );
 });
 
 function GlassView({ style, children }: { style?: object; children: React.ReactNode }) {
   return (
-    <View
-      style={[
-        styles.glass,
-        Platform.OS === 'android' ? styles.glassAndroid : styles.glassIOS,
-        style,
-      ]}
-    >
+    <View style={[styles.glass, Platform.OS === 'android' ? styles.glassAndroid : styles.glassIOS, style]}>
       {children}
     </View>
   );
 }
 
+// ─── Main screen ──────────────────────────────────────────────────────────────
+
 export default function MapTab() {
   const {
-    towers,
-    isLoading: towersLoading,
-    error: towersError,
-    location,
-    locationLoading,
-    locationError,
-    mapRegionRef,
-    refreshCurrentRegion,
-    dataSource,
-    setDataSource,
+    towers, isLoading: towersLoading, error: towersError,
+    location, locationLoading, locationError,
+    mapRegionRef, refreshCurrentRegion,
+    dataSource, setDataSource,
   } = useTowersContext();
 
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
-  const [mapFilters, setMapFilters]       = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
+  const [mapFilters,    setMapFilters]    = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [currentRegion, setCurrentRegion] = useState<Region | null>(null);
   const [hasPanned,     setHasPanned]     = useState(false);
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
-  const [ripplePoint,   setRipplePoint]   = useState<{ x: number; y: number } | null>(null);
+  const [mapLayout,     setMapLayout]     = useState<MapLayout>({ width: 0, height: 0 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef            = useRef<any>(null);
@@ -159,9 +266,7 @@ export default function MapTab() {
     filterTimerRef.current = setTimeout(() => setMapFilters(new Set(next)), 200);
   }, []);
 
-  const handleAllChip = useCallback(() => {
-    applyFilters(new Set(ALL_RADIOS));
-  }, [applyFilters]);
+  const handleAllChip = useCallback(() => applyFilters(new Set(ALL_RADIOS)), [applyFilters]);
 
   const toggleFilter = useCallback((radio: CellTower['radio']) => {
     setActiveFilters((prev) => {
@@ -188,18 +293,16 @@ export default function MapTab() {
     userHasDraggedRef.current = false;
   }, [refreshCurrentRegion]);
 
-  const handlePanDrag = useCallback(() => {
-    userHasDraggedRef.current = true;
+  const handlePanDrag   = useCallback(() => { userHasDraggedRef.current = true; }, []);
+  const handleMapLayout = useCallback((e: LayoutChangeEvent) => {
+    setMapLayout(e.nativeEvent.layout);
   }, []);
 
-  const handleRegionChangeComplete = useCallback(
-    (region: Region) => {
-      mapRegionRef.current = region;
-      setCurrentRegion(region);
-      if (userHasDraggedRef.current && firstFetchDoneRef.current) setHasPanned(true);
-    },
-    [mapRegionRef],
-  );
+  const handleRegionChangeComplete = useCallback((region: Region) => {
+    mapRegionRef.current = region;
+    setCurrentRegion(region);
+    if (userHasDraggedRef.current && firstFetchDoneRef.current) setHasPanned(true);
+  }, [mapRegionRef]);
 
   const handleMyLocation = useCallback(() => {
     if (!location || !mapRef.current) return;
@@ -209,25 +312,6 @@ export default function MapTab() {
     );
   }, [location]);
 
-  // Recompute ripple position whenever the selected tower or visible region changes.
-  // pointForCoordinate is async — we get a screen point and use it to position
-  // the ripple overlay. This runs outside Marker/Fabric, so animations are free.
-  useEffect(() => {
-    if (!selectedTower || !mapRef.current) {
-      setRipplePoint(null);
-      return;
-    }
-    let cancelled = false;
-    mapRef.current
-      .pointForCoordinate({ latitude: selectedTower.lat, longitude: selectedTower.lon })
-      .then((pt: { x: number; y: number }) => {
-        if (!cancelled) setRipplePoint(pt);
-      })
-      .catch(() => { /* map not yet ready */ });
-    return () => { cancelled = true; };
-  }, [selectedTower, currentRegion]);
-
-  // Build supercluster index whenever filtered towers change
   const filteredTowers = useMemo(
     () => towers.filter((t) => mapFilters.has(t.radio)),
     [towers, mapFilters],
@@ -238,19 +322,14 @@ export default function MapTab() {
       type: 'Feature',
       geometry: {
         type: 'Point',
-        coordinates: [
-          tower.lon + jitter(tower.cellid),
-          tower.lat + jitter(tower.cellid + 99991),
-        ],
+        coordinates: [tower.lon + jitter(tower.cellid), tower.lat + jitter(tower.cellid + 99991)],
       },
       properties: { tower },
     })),
     [filteredTowers],
   );
 
-  useMemo(() => {
-    supercluster.load(clusterPoints);
-  }, [clusterPoints]);
+  useMemo(() => { supercluster.load(clusterPoints); }, [clusterPoints]);
 
   const clusters = useMemo(() => {
     const region = currentRegion ?? mapRegionRef.current;
@@ -258,10 +337,41 @@ export default function MapTab() {
     return supercluster.getClusters(regionToBBox(region), regionToZoom(region));
   }, [clusterPoints, currentRegion, mapRegionRef]);
 
-  const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
+  // Compute ripple overlay items for ALL visible individual towers and clusters.
+  // Uses synchronous linear approximation for lat/lon → screen pixels (accurate at city zoom).
+  const rippleItems = useMemo<RippleItem[]>(() => {
+    if (!currentRegion || !mapLayout.width) return [];
+    const zoom = regionToZoom(currentRegion);
+    if (zoom < MIN_ZOOM || clusters.length > MAX_MARKERS) return [];
 
+    const { width, height } = mapLayout;
+    const items: RippleItem[] = [];
+
+    for (const item of clusters) {
+      const [lon, lat] = item.geometry.coordinates;
+      if (!isFinite(lat) || !isFinite(lon)) continue;
+      const { x, y } = coordToScreen(lat, lon, currentRegion, width, height);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((item.properties as any).cluster) {
+        const { cluster_id, point_count } = item.properties as Supercluster.ClusterProperties;
+        const counts = item.properties as unknown as ClusterRadioCounts;
+        const dom = dominantRadio({ gsm: counts.gsm ?? 0, umts: counts.umts ?? 0, lte: counts.lte ?? 0, nr: counts.nr ?? 0 });
+        const cfg = RIPPLE_CONFIG[dom];
+        items.push({ id: `c${cluster_id}`, x, y, color: RADIO_COLORS[dom], ...cfg, staggerMs: (cluster_id % 8) * 300 });
+        void point_count; // suppress unused warning
+      } else {
+        const { tower } = item.properties as { tower: CellTower };
+        if (!tower) continue;
+        const cfg = RIPPLE_CONFIG[tower.radio];
+        items.push({ id: `t${tower.cellid}`, x, y, color: RADIO_COLORS[tower.radio], ...cfg, staggerMs: (tower.cellid % 8) * 300 });
+      }
+    }
+    return items;
+  }, [clusters, currentRegion, mapLayout]);
+
+  const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
   const zoom = currentRegion ? regionToZoom(currentRegion) : MIN_ZOOM;
-  const tooZoomedOut = zoom < MIN_ZOOM;
+  const tooZoomedOut   = zoom < MIN_ZOOM;
   const tooManyMarkers = !tooZoomedOut && clusters.length > MAX_MARKERS;
 
   if (locationLoading) {
@@ -279,7 +389,6 @@ export default function MapTab() {
       </View>
     );
   }
-
   if (!location) {
     return (
       <View style={styles.centered}>
@@ -303,17 +412,18 @@ export default function MapTab() {
         }}
         onRegionChangeComplete={handleRegionChangeComplete}
         onPanDrag={handlePanDrag}
+        onLayout={handleMapLayout}
         showsUserLocation
       >
         {!tooZoomedOut && !tooManyMarkers && clusters.flatMap((item) => {
           const [lon, lat] = item.geometry.coordinates;
           if (!isFinite(lat) || !isFinite(lon)) return [];
 
-          const isCluster = item.properties.cluster;
-
-          if (isCluster) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((item.properties as any).cluster) {
             const { cluster_id, point_count } = item.properties as Supercluster.ClusterProperties;
             if (!isFinite(cluster_id) || !isFinite(point_count)) return [];
+            const counts = item.properties as unknown as ClusterRadioCounts;
             return [
               <ClusterMarker
                 key={`cluster-${cluster_id}`}
@@ -321,6 +431,10 @@ export default function MapTab() {
                 lon={lon}
                 clusterId={cluster_id}
                 pointCount={point_count}
+                counts={{
+                  gsm: counts.gsm ?? 0, umts: counts.umts ?? 0,
+                  lte: counts.lte ?? 0, nr:   counts.nr   ?? 0,
+                }}
                 onPress={() => {
                   const expansionZoom = supercluster.getClusterExpansionZoom(cluster_id);
                   const delta = 360 / Math.pow(2, expansionZoom);
@@ -343,24 +457,16 @@ export default function MapTab() {
               onPress={() => setSelectedTower(tower)}
               anchor={{ x: 0.5, y: 0.5 }}
             >
-              <TowerMarker
-                radio={tower.radio}
-                cellid={tower.cellid}
-                isSelected={selectedTower?.cellid === tower.cellid}
-              />
+              <TowerMarker radio={tower.radio} cellid={tower.cellid} />
             </Marker>,
           ];
         })}
       </MapView>
 
-      {/* ── Selected tower ripple (rendered outside MapView to avoid Fabric mutations) ── */}
-      {ripplePoint && selectedTower && (
-        <SelectedTowerRipple
-          x={ripplePoint.x}
-          y={ripplePoint.y}
-          color={RADIO_COLORS[selectedTower.radio] ?? '#8b5cf6'}
-        />
-      )}
+      {/* ── Ripple overlay for ALL towers + clusters (sibling to MapView, free to animate) ── */}
+      {rippleItems.map((item) => (
+        <SingleRipple key={item.id} {...item} />
+      ))}
 
       {/* ── Zoom / density overlay ── */}
       {(tooZoomedOut || tooManyMarkers) && (
@@ -385,9 +491,7 @@ export default function MapTab() {
                   </Text>
               }
             </View>
-
             <View style={styles.barDivider} />
-
             <View style={styles.chipRow}>
               <TouchableOpacity
                 onPress={handleAllChip}
@@ -396,7 +500,6 @@ export default function MapTab() {
               >
                 <Text style={[styles.chipText, !isAllActive && styles.chipTextInactive]}>All</Text>
               </TouchableOpacity>
-
               {ALL_RADIOS.map((radio) => {
                 const active = !isAllActive && activeFilters.has(radio);
                 return (
@@ -480,6 +583,8 @@ export default function MapTab() {
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const SHADOW = {
   shadowColor: '#000',
   shadowOffset: { width: 0, height: 2 },
@@ -502,12 +607,8 @@ const styles = StyleSheet.create({
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
 
   statusBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 9,
-    paddingHorizontal: 13,
-    gap: 10,
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 9, paddingHorizontal: 13, gap: 10,
   },
   statusLeft: { minWidth: 76 },
   countText: { fontSize: 13, fontWeight: '700', color: '#1c1c1e', letterSpacing: -0.2 },
@@ -522,13 +623,9 @@ const styles = StyleSheet.create({
 
   iconBtn: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
 
-  cluster: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: '#1c1c1e',
-    alignItems: 'center', justifyContent: 'center',
-    ...SHADOW,
+  rippleRing: {
+    width: RIPPLE_BASE, height: RIPPLE_BASE, borderRadius: RIPPLE_BASE / 2, borderWidth: 1.5,
   },
-  clusterText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 
   searchWrap: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -537,20 +634,14 @@ const styles = StyleSheet.create({
   searchBtn: { paddingVertical: 11, paddingHorizontal: 20 },
   searchText: { fontSize: 14, fontWeight: '600', color: '#1c1c1e', letterSpacing: -0.1 },
 
-  zoomWarning: {
-    position: 'absolute', bottom: 160, left: 0, right: 0,
-    alignItems: 'center',
-  },
+  zoomWarning: { position: 'absolute', bottom: 160, left: 0, right: 0, alignItems: 'center' },
   zoomWarningText: { fontSize: 13, fontWeight: '600', color: '#1c1c1e', paddingVertical: 9, paddingHorizontal: 18 },
 
-  rippleWrap: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  rippleRing: { position: 'absolute', width: 44, height: 44, borderRadius: 22, borderWidth: 1.5 },
-
   locationBtnWrap: { position: 'absolute', bottom: 108, right: 14 },
-  sentryDebugBtn: { position: 'absolute', bottom: 160, right: 14 },
-  dataSourceBtn: { position: 'absolute', bottom: 212, right: 14 },
-  dataSourcePill: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 18 },
+  sentryDebugBtn:  { position: 'absolute', bottom: 160, right: 14 },
+  dataSourceBtn:   { position: 'absolute', bottom: 212, right: 14 },
+  dataSourcePill:  { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 18 },
   dataSourcePillActive: { backgroundColor: 'rgba(34,197,94,0.15)' },
-  dataSourceText: { fontSize: 11, fontWeight: '800', color: '#6b7280', letterSpacing: 0.3 },
+  dataSourceText:  { fontSize: 11, fontWeight: '800', color: '#6b7280', letterSpacing: 0.3 },
   dataSourceTextActive: { color: '#16a34a' },
 });
