@@ -59,9 +59,9 @@ interface RippleItem {
 }
 
 
-// ─── Supercluster ─────────────────────────────────────────────────────────────
+// ─── Supercluster config (stable, defined outside component) ──────────────────
 
-const supercluster = new Supercluster<{ tower: CellTower }, ClusterRadioCounts>({
+const SC_OPTIONS: Supercluster.Options<{ tower: CellTower }, ClusterRadioCounts> = {
   radius: 40,
   maxZoom: 16,
   map: (props) => ({
@@ -76,7 +76,7 @@ const supercluster = new Supercluster<{ tower: CellTower }, ClusterRadioCounts>(
     acc.lte  += props.lte;
     acc.nr   += props.nr;
   },
-});
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -280,10 +280,12 @@ export default function MapTab() {
   const [rippleItems, setRippleItems] = useState<RippleItem[]>([]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapRef            = useRef<any>(null);
-  const firstFetchDoneRef = useRef(false);
-  const userHasDraggedRef = useRef(false);
-  const isPanningRef      = useRef(false);
+  const mapRef                 = useRef<any>(null);
+  const scRef                  = useRef(new Supercluster<{ tower: CellTower }, ClusterRadioCounts>(SC_OPTIONS));
+  const firstFetchDoneRef      = useRef(false);
+  const userHasDraggedRef      = useRef(false);
+  const isPanningRef           = useRef(false);
+  const isProgrammaticMoveRef  = useRef(false);
   const [isPanning, setIsPanning] = useState(false);
 
   if (towers.length > 0) firstFetchDoneRef.current = true;
@@ -331,6 +333,10 @@ export default function MapTab() {
     setCurrentRegion(region);
     isPanningRef.current = false;
     setIsPanning(false);
+    if (isProgrammaticMoveRef.current) {
+      isProgrammaticMoveRef.current = false;
+      return;
+    }
     if (userHasDraggedRef.current && firstFetchDoneRef.current) {
       refreshCurrentRegion();
     }
@@ -338,11 +344,39 @@ export default function MapTab() {
 
   const handleMyLocation = useCallback(() => {
     if (!location || !mapRef.current) return;
+    isProgrammaticMoveRef.current = true;
     mapRef.current.animateToRegion(
       { latitude: location.latitude, longitude: location.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 },
       500,
     );
   }, [location]);
+
+  const filteredTowers = useMemo(
+    () => towers.filter((t) => mapFilters.has(t.radio)),
+    [towers, mapFilters],
+  );
+
+  const clusterPoints = useMemo<Supercluster.PointFeature<{ tower: CellTower }>[]>(
+    () => filteredTowers.map((tower) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [tower.lon + jitter(tower.cellid), tower.lat + jitter(tower.cellid + 99991)],
+      },
+      properties: { tower },
+    })),
+    [filteredTowers],
+  );
+
+  useEffect(() => {
+    scRef.current.load(clusterPoints);
+  }, [clusterPoints]);
+
+  const clusters = useMemo(() => {
+    const region = currentRegion ?? mapRegionRef.current;
+    if (!region) return [];
+    return scRef.current.getClusters(regionToBBox(region), regionToZoom(region));
+  }, [clusterPoints, currentRegion, mapRegionRef]);
 
   // Build ripple items by asking MapView for exact screen positions.
   // Done in a single effect so positions and items are always in sync —
@@ -400,31 +434,6 @@ export default function MapTab() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clusters, currentRegion, isPanning]);
-
-  const filteredTowers = useMemo(
-    () => towers.filter((t) => mapFilters.has(t.radio)),
-    [towers, mapFilters],
-  );
-
-  const clusterPoints = useMemo<Supercluster.PointFeature<{ tower: CellTower }>[]>(
-    () => filteredTowers.map((tower) => ({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [tower.lon + jitter(tower.cellid), tower.lat + jitter(tower.cellid + 99991)],
-      },
-      properties: { tower },
-    })),
-    [filteredTowers],
-  );
-
-  useMemo(() => { supercluster.load(clusterPoints); }, [clusterPoints]);
-
-  const clusters = useMemo(() => {
-    const region = currentRegion ?? mapRegionRef.current;
-    if (!region) return [];
-    return supercluster.getClusters(regionToBBox(region), regionToZoom(region));
-  }, [clusterPoints, currentRegion, mapRegionRef]);
 
 
   const displayCount = towers.filter((t) => activeFilters.has(t.radio)).length;
@@ -499,8 +508,9 @@ export default function MapTab() {
                   lte: counts.lte ?? 0, nr:   counts.nr   ?? 0,
                 }}
                 onPress={() => {
-                  const expansionZoom = supercluster.getClusterExpansionZoom(cluster_id);
+                  const expansionZoom = scRef.current.getClusterExpansionZoom(cluster_id);
                   const delta = 360 / Math.pow(2, expansionZoom);
+                  isProgrammaticMoveRef.current = true;
                   mapRef.current?.animateToRegion(
                     { latitude: lat, longitude: lon, latitudeDelta: delta, longitudeDelta: delta },
                     300,

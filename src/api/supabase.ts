@@ -39,36 +39,32 @@ function rowToTower(row: SupabaseRow): CellTower {
 }
 
 export async function fetchTowersFromSupabase(
-  bbox: ViewportBBox
+  bbox: ViewportBBox,
+  signal?: AbortSignal,
 ): Promise<{ towers: CellTower[]; fetchedBBox: ViewportBBox }> {
-  try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/towers_in_bbox`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        min_lat: bbox.minLat,
-        max_lat: bbox.maxLat,
-        min_lon: bbox.minLon,
-        max_lon: bbox.maxLon,
-      }),
-    });
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/towers_in_bbox`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      min_lat: bbox.minLat,
+      max_lat: bbox.maxLat,
+      min_lon: bbox.minLon,
+      max_lon: bbox.maxLon,
+    }),
+    signal,
+  });
 
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => '');
-      console.error('[Supabase] HTTP', resp.status, body);
-      return { towers: [], fetchedBBox: bbox };
-    }
-
-    const rows: SupabaseRow[] = await resp.json();
-    const towers = rows.map(rowToTower);
-    console.log(`[Supabase] ${towers.length} towers for bbox`);
-    return { towers, fetchedBBox: bbox };
-  } catch (err) {
-    console.error('[Supabase] fetch error:', err);
-    return { towers: [], fetchedBBox: bbox };
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => '');
+    throw new Error(`Supabase HTTP ${resp.status}: ${body}`);
   }
+
+  const rows: SupabaseRow[] = await resp.json();
+  const towers = rows.map(rowToTower);
+  console.log(`[Supabase] ${towers.length} towers for bbox`);
+  return { towers, fetchedBBox: bbox };
 }

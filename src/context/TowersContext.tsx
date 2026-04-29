@@ -3,13 +3,13 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import { Region } from 'react-native-maps';
 
 import { ViewportBBox } from '../api/opencellid';
-import { useDataSource } from './DataSourceContext';
 import { useLocation } from '../hooks/useLocation';
 import { useTowers } from '../hooks/useTowers';
 import { CellTower } from '../types';
@@ -32,8 +32,6 @@ interface TowersContextValue {
   locationError: string | null;
   mapRegionRef: React.RefObject<Region | null>;
   refreshCurrentRegion: () => void;
-  dataSource: import('./DataSourceContext').DataSource;
-  setDataSource: (src: import('./DataSourceContext').DataSource) => void;
 }
 
 const TowersContext = createContext<TowersContextValue | null>(null);
@@ -59,8 +57,7 @@ export function TowersProvider({ children }: { children: React.ReactNode }) {
     setFetchBBox(regionToBBox(initialRegion));
   }, [location]);
 
-  const { dataSource, setDataSource } = useDataSource();
-  const { towers, isLoading, error } = useTowers(fetchBBox, fetchKey, dataSource);
+  const { towers, isLoading, error } = useTowers(fetchBBox, fetchKey);
 
   const refreshCurrentRegion = useCallback(() => {
     const region = mapRegionRef.current;
@@ -69,24 +66,21 @@ export function TowersProvider({ children }: { children: React.ReactNode }) {
     setFetchKey((k) => k + 1);
   }, []);
 
-  return (
-    <TowersContext.Provider
-      value={{
-        towers,
-        isLoading,
-        error,
-        location,
-        locationLoading,
-        locationError,
-        mapRegionRef,
-        refreshCurrentRegion,
-        dataSource,
-        setDataSource,
-      }}
-    >
-      {children}
-    </TowersContext.Provider>
+  const value = useMemo(
+    () => ({
+      towers,
+      isLoading,
+      error,
+      location,
+      locationLoading,
+      locationError,
+      mapRegionRef,
+      refreshCurrentRegion,
+    }),
+    [towers, isLoading, error, location, locationLoading, locationError, refreshCurrentRegion],
   );
+
+  return <TowersContext.Provider value={value}>{children}</TowersContext.Provider>;
 }
 
 export function useTowersContext(): TowersContextValue {

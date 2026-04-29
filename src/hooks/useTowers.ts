@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { CellTower } from '../types';
 import { ViewportBBox } from '../api/opencellid';
-// import { fetchTowers } from '../api/opencellid'; // kept for reference, not used
 import { fetchTowersFromSupabase } from '../api/supabase';
-import { DataSource } from '../context/DataSourceContext';
 
 interface UseTowersResult {
   towers: CellTower[];
@@ -15,13 +13,13 @@ interface UseTowersResult {
 export function useTowers(
   bbox: ViewportBBox | null,
   fetchKey: number,
-  _dataSource: DataSource = 'supabase'
 ): UseTowersResult {
   const [towers, setTowers] = useState<CellTower[]>([]);
   const [fetchedBBox, setFetchedBBox] = useState<ViewportBBox | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   // Accumulated tower cache — prevents blinking when panning over known areas
   const towersMapRef = useRef<Map<string, CellTower>>(new Map());
 
@@ -34,20 +32,20 @@ export function useTowers(
     if (minLat === null || maxLat === null || minLon === null || maxLon === null) return;
 
     if (timerRef.current) clearTimeout(timerRef.current);
+    // Cancel any in-flight fetch so a stale response can't overwrite newer results
+    abortRef.current?.abort();
 
     setFetchedBBox(null);
     setError(null);
     setIsLoading(true);
 
     timerRef.current = setTimeout(async () => {
+      const ac = new AbortController();
+      abortRef.current = ac;
       const bboxArg = { minLat, maxLat, minLon, maxLon };
 
-      // Always use Supabase. OpenCelliD path preserved in ../api/opencellid.ts.
-      // const fetcher = _dataSource === 'supabase' ? fetchTowersFromSupabase : fetchTowers;
-      const fetcher = fetchTowersFromSupabase;
-
       try {
-        const { towers: result, fetchedBBox: resultBBox } = await fetcher(bboxArg);
+        const { towers: result, fetchedBBox: resultBBox } = await fetchTowersFromSupabase(bboxArg, ac.signal);
 
         // Merge new towers into the accumulated cache so already-visible towers
         // don't blink out when panning to a slightly different region.
@@ -70,16 +68,25 @@ export function useTowers(
           }
         }
 
-        if (towersMapRef.current.size === 0) {
+        // Only expose towers within the exact current viewport — the cache may hold
+        // a broader set for smooth re-panning, but off-screen towers must not appear
+        // in counts or clusters.
+        const visible = Array.from(towersMapRef.current.values()).filter(
+          (t) => t.lat >= minLat && t.lat <= maxLat && t.lon >= minLon && t.lon <= maxLon,
+        );
+
+        if (visible.length === 0) {
           setError('No towers found');
           setTowers([]);
         } else {
           setError(null);
-          setTowers(Array.from(towersMapRef.current.values()));
+          setTowers(visible);
         }
 
         setFetchedBBox(resultBBox);
-      } catch {
+      } catch (err: unknown) {
+        // Ignore aborted requests — a newer fetch is already in flight
+        if (err instanceof Error && err.name === 'AbortError') return;
         setError('Failed to load towers');
         setTowers([]);
       } finally {
@@ -89,6 +96,7 @@ export function useTowers(
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      abortRef.current?.abort();
     };
   }, [minLat, maxLat, minLon, maxLon, fetchKey]);
 
