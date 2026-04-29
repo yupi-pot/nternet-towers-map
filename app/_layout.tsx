@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
 import { useFonts } from 'expo-font';
-import { router, Stack, useNavigationContainerRef } from 'expo-router';
+import { router, Stack, useNavigationContainerRef, useRootNavigationState } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
@@ -72,13 +72,15 @@ export default Sentry.wrap(function RootLayout() {
 
 function RootLayoutNav({ needsOnboarding }: { needsOnboarding: boolean }) {
   const colorScheme = useColorScheme();
+  const navigationState = useRootNavigationState();
 
   useEffect(() => {
+    if (!navigationState?.key) return; // wait until navigator is mounted
     if (needsOnboarding) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       router.replace('/onboarding' as any);
     }
-  }, [needsOnboarding]);
+  }, [needsOnboarding, navigationState?.key]);
 
   return (
     <PremiumProvider>
