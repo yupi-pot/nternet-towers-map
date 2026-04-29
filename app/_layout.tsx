@@ -7,6 +7,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { PremiumProvider } from '@/src/context/PremiumContext';
@@ -83,6 +84,7 @@ function RootLayoutNav({ needsOnboarding }: { needsOnboarding: boolean }) {
   }, [needsOnboarding, navigationState?.key]);
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <PremiumProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
@@ -92,5 +94,6 @@ function RootLayoutNav({ needsOnboarding }: { needsOnboarding: boolean }) {
         </Stack>
       </ThemeProvider>
     </PremiumProvider>
+    </GestureHandlerRootView>
   );
 }
