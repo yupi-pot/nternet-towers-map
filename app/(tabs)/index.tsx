@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Sentry from '@sentry/react-native';
 import Supercluster from 'supercluster';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -519,6 +520,13 @@ export default function MapTab() {
         </View>
       )}
 
+      {/* ── Top gradient scrim ── */}
+      <LinearGradient
+        colors={['rgba(255,255,255,0.20)', 'rgba(255,255,255,0)']}
+        style={styles.topGradient}
+        pointerEvents="none"
+      />
+
       {/* ── Top controls ── */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
         <View style={styles.statusBar} pointerEvents="auto">
@@ -529,7 +537,7 @@ export default function MapTab() {
             <Text style={styles.bigTitle}> towers</Text>
           </View>
 
-          {/* Filter pills — single line */}
+          {/* Filter pills — single line, styled like list tab */}
           <View style={styles.chipRow}>
             <TouchableOpacity
               onPress={handleAllChip}
@@ -554,7 +562,7 @@ export default function MapTab() {
                   ]}
                   activeOpacity={0.75}
                 >
-                  <View style={[styles.pillDot, { backgroundColor: active ? color : '#9ca3af' }]} />
+                  <View style={[styles.pillDot, { backgroundColor: color }]} />
                   <Text style={[styles.pillText, { color: active ? color : '#6b7280' }]} numberOfLines={1}>
                     {RADIO_LABEL[radio]}
                   </Text>
@@ -645,7 +653,8 @@ const styles = StyleSheet.create({
   glassIOS: { backgroundColor: 'rgba(255,255,255,0.82)' },
   glassAndroid: { backgroundColor: 'rgba(255,255,255,0.95)' },
 
-  topOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
+  topGradient: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 5 },
+  topOverlay: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 6 },
 
   statusBar: {
     flexDirection: 'column',
@@ -661,26 +670,25 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(255,255,255,0.7)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6,
   },
 
-  chipRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 5, alignItems: 'center' },
-  chip: { borderRadius: 8, paddingVertical: 5, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
+  chipRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 7, alignItems: 'center' },
+  chip: { borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
   chipAll: { backgroundColor: '#1c1c1e' },
-  chipInactive: { backgroundColor: 'rgba(255,255,255,0.65)' },
-  chipText: { fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.1 },
+  chipInactive: { backgroundColor: 'rgba(255,255,255,0.92)' },
+  chipText: { fontSize: 12, fontWeight: '700', color: '#fff', letterSpacing: 0.1 },
   chipTextInactive: { color: '#6b7280' },
 
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     borderRadius: 100,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    gap: 4,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    gap: 6,
   },
-  pillInactive: { backgroundColor: 'rgba(255,255,255,0.65)' },
-  pillDot: { width: 5, height: 5, borderRadius: 3 },
-  pillText: { fontSize: 10, fontWeight: '600', letterSpacing: 0.1 },
-  pillCount: { fontSize: 10, fontWeight: '500' },
+  pillInactive: { backgroundColor: 'rgba(255,255,255,0.92)' },
+  pillDot: { width: 6, height: 6, borderRadius: 3 },
+  pillText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.1 },
+  pillCount: { fontSize: 11, fontWeight: '500' },
 
   iconBtn: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
 
