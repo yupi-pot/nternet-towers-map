@@ -486,59 +486,56 @@ export default function MapTab() {
 
       {/* ── Top controls ── */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
-        <View style={styles.barRow} pointerEvents="auto">
-          <GlassView style={styles.statusBar}>
-            <View style={styles.statusLeft}>
-              {towersLoading
-                ? <ActivityIndicator size="small" color="#1c1c1e" />
-                : <Text style={styles.countText}>
-                    {towers.length > 0 ? `${displayCount} towers` : (towersError ?? 'No towers')}
-                  </Text>
-              }
-            </View>
-            <View style={styles.barDivider} />
-            <View style={styles.chipRow}>
-              <TouchableOpacity
-                onPress={handleAllChip}
-                style={[styles.chip, isAllActive ? styles.chipAll : styles.chipInactive]}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.chipText, !isAllActive && styles.chipTextInactive]}>All</Text>
-              </TouchableOpacity>
-              {ALL_RADIOS.map((radio) => {
-                const active = !isAllActive && activeFilters.has(radio);
-                const color = RADIO_COLORS[radio];
-                return (
-                  <TouchableOpacity
-                    key={radio}
-                    onPress={() => toggleFilter(radio)}
-                    style={[
-                      styles.pill,
-                      active
-                        ? { backgroundColor: color + '18', borderWidth: 1, borderColor: color + 'AA' }
-                        : styles.pillInactive,
-                    ]}
-                    activeOpacity={0.75}
-                  >
-                    <View style={[styles.pillDot, { backgroundColor: active ? color : '#9ca3af' }]} />
-                    <Text style={[styles.pillText, { color: active ? color : '#6b7280' }]}>
-                      {RADIO_LABEL[radio]}
-                    </Text>
-                    <Text style={[styles.pillCount, { color: active ? color + '99' : '#9ca3af' }]}>
-                      {radioCounts[radio]}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </GlassView>
+        <GlassView style={styles.statusBar} pointerEvents="auto">
+          {/* Title row */}
+          <View style={styles.titleRow}>
+            {towersLoading
+              ? <ActivityIndicator size="small" color="#1c1c1e" style={{ marginRight: 8 }} />
+              : null}
+            <Text style={styles.bigTitle}>
+              Found{' '}
+              <Text style={styles.bigTitleCount}>{displayCount}</Text>
+              {' '}towers
+            </Text>
+          </View>
 
-          <TouchableOpacity onPress={handleRefresh} activeOpacity={0.75}>
-            <GlassView style={styles.iconBtn}>
-              <Ionicons name="refresh" size={17} color="#1c1c1e" />
-            </GlassView>
-          </TouchableOpacity>
-        </View>
+          {/* Filter pills — single line */}
+          <View style={styles.chipRow}>
+            <TouchableOpacity
+              onPress={handleAllChip}
+              style={[styles.chip, isAllActive ? styles.chipAll : styles.chipInactive]}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.chipText, !isAllActive && styles.chipTextInactive]}>All</Text>
+            </TouchableOpacity>
+            {ALL_RADIOS.map((radio) => {
+              const active = !isAllActive && activeFilters.has(radio);
+              const color = RADIO_COLORS[radio];
+              return (
+                <TouchableOpacity
+                  key={radio}
+                  onPress={() => toggleFilter(radio)}
+                  style={[
+                    styles.pill,
+                    { flex: 1 },
+                    active
+                      ? { backgroundColor: color + '18', borderWidth: 1, borderColor: color + 'AA' }
+                      : styles.pillInactive,
+                  ]}
+                  activeOpacity={0.75}
+                >
+                  <View style={[styles.pillDot, { backgroundColor: active ? color : '#9ca3af' }]} />
+                  <Text style={[styles.pillText, { color: active ? color : '#6b7280' }]} numberOfLines={1}>
+                    {RADIO_LABEL[radio]}
+                  </Text>
+                  <Text style={[styles.pillCount, { color: active ? color + '99' : '#9ca3af' }]}>
+                    {radioCounts[radio]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </GlassView>
       </SafeAreaView>
 
       {/* ── Search this area ── */}
@@ -619,17 +616,17 @@ const styles = StyleSheet.create({
   glassAndroid: { backgroundColor: 'rgba(255,255,255,0.95)' },
 
   topOverlay: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 12 },
-  barRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
 
   statusBar: {
-    flex: 1, flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 9, paddingHorizontal: 13, gap: 10,
+    flexDirection: 'column',
+    paddingVertical: 12, paddingHorizontal: 16, gap: 10,
+    marginTop: 8,
   },
-  statusLeft: { minWidth: 76 },
-  countText: { fontSize: 13, fontWeight: '700', color: '#1c1c1e', letterSpacing: -0.2 },
-  barDivider: { width: StyleSheet.hairlineWidth, height: 18, backgroundColor: 'rgba(0,0,0,0.2)' },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
+  bigTitle: { fontSize: 34, fontWeight: '800', color: '#1c1c1e', letterSpacing: -0.5 },
+  bigTitleCount: { color: '#3b82f6' },
 
-  chipRow: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5, alignItems: 'center' },
+  chipRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 5, alignItems: 'center' },
   chip: { borderRadius: 8, paddingVertical: 5, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
   chipAll: { backgroundColor: '#1c1c1e' },
   chipInactive: { backgroundColor: 'rgba(0,0,0,0.06)' },
@@ -639,14 +636,15 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 100,
     paddingVertical: 6,
-    paddingHorizontal: 11,
-    gap: 5,
+    paddingHorizontal: 8,
+    gap: 4,
   },
   pillInactive: { backgroundColor: 'rgba(0,0,0,0.05)' },
   pillDot: { width: 5, height: 5, borderRadius: 3 },
-  pillText: { fontSize: 11, fontWeight: '600', letterSpacing: 0.1 },
+  pillText: { fontSize: 10, fontWeight: '600', letterSpacing: 0.1 },
   pillCount: { fontSize: 10, fontWeight: '500' },
 
   iconBtn: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
