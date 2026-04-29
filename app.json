@@ -61,7 +61,13 @@
           "project": "cellr"
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "expo-sensors",
+        {
+          "motionPermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
