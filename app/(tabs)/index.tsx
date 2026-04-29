@@ -396,6 +396,7 @@ export default function MapTab() {
     markerJustPressedRef.current = true; // block MapView.onPress for this tap
     setSelectedTower(tower);
     setCoverageTower(tower);
+    setRippleItems([]);
 
     const region = currentRegion ?? mapRegionRef.current;
     if (!mapRef.current || !region) return;
@@ -585,6 +586,7 @@ export default function MapTab() {
                 minimized={coverageTower !== null}
                 tracksViewChanges={trackingMarkers}
                 onPress={() => {
+                  setRippleItems([]);
                   const expansionZoom = scRef.current.getClusterExpansionZoom(cluster_id);
                   const delta = 360 / Math.pow(2, expansionZoom);
                   isProgrammaticMoveRef.current = true;
