@@ -403,10 +403,10 @@ const styles = StyleSheet.create({
     minHeight: 160,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 36,
+    fontWeight: '600',
     color: TITLE_COLOR,
-    lineHeight: 40,
+    lineHeight: 44,
     marginBottom: 14,
     letterSpacing: -0.5,
   },

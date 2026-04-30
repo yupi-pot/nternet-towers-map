@@ -763,11 +763,11 @@ const styles = StyleSheet.create({
   },
   titleRow: { flexDirection: 'row', alignItems: 'flex-end' },
   bigTitle: {
-    fontSize: 34, fontWeight: '800', color: '#1c1c1e', letterSpacing: -0.5,
+    fontSize: 36, fontWeight: '600', color: '#1c1c1e', letterSpacing: -0.5,
     textShadowColor: 'rgba(255,255,255,0.7)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6,
   },
   bigTitleCount: {
-    fontSize: 34, fontWeight: '800', color: '#9ca3af', letterSpacing: -0.5,
+    fontSize: 36, fontWeight: '600', color: '#9ca3af', letterSpacing: -0.5,
     textShadowColor: 'rgba(255,255,255,0.7)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6,
   },
 

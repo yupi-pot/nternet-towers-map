@@ -294,8 +294,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   largeTitle: {
-    fontSize: 34,
-    fontWeight: '800',
+    fontSize: 36,
+    fontWeight: '600',
     color: '#1c1c1e',
     letterSpacing: -0.5,
   },
