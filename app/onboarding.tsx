@@ -237,14 +237,6 @@ export default function OnboardingScreen() {
   const isLast = currentIndex === PAGES.length - 1;
   const isVideoSlide = currentIndex === 0;
 
-  // Fade button content out → in whenever the slide changes
-  const btnOpacity = useSharedValue(1);
-  useEffect(() => {
-    btnOpacity.value = withTiming(0, { duration: 100 }, (done) => {
-      if (done) btnOpacity.value = withTiming(1, { duration: 200 });
-    });
-  }, [currentIndex, btnOpacity]);
-  const btnAnimStyle = useAnimatedStyle(() => ({ opacity: btnOpacity.value }));
 
   const finish = useCallback(async () => {
     await SecureStore.setItemAsync('hasSeenOnboarding', 'true');
@@ -327,7 +319,7 @@ export default function OnboardingScreen() {
 
       {/* Bottom bar — always rendered so FlatList height never shifts */}
       <View style={[styles.bottom, { paddingBottom: insets.bottom + 12, backgroundColor: isVideoSlide ? 'transparent' : BG }]}>
-        <Animated.View style={btnAnimStyle}>
+        <View>
           {isVideoSlide ? (
             <TouchableOpacity style={styles.videoNextBtn} onPress={handleNext} activeOpacity={0.85}>
               <Text style={styles.videoNextText}>Get Started →</Text>
@@ -354,7 +346,7 @@ export default function OnboardingScreen() {
               <Text style={styles.nextText}>Next →</Text>
             </TouchableOpacity>
           )}
-        </Animated.View>
+        </View>
       </View>
     </View>
   );
