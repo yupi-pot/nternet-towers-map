@@ -73,7 +73,7 @@ const PAGES: Page[] = [
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-tower.jpg'),
-    title: 'Coverage maps\nlie to you.',
+    title: 'Official coverage maps are guesswork.',
     body: 'Carrier maps show where they hope you have signal. Ours cross-references real tower registrations — verified, confidence-rated, and refreshed every few days.',
   },
   {
