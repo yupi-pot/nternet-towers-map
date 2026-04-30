@@ -62,12 +62,11 @@ async function fetchElevations(
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch('https://api.open-elevation.com/api/v1/lookup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ locations }),
-      signal: ctrl.signal,
-    });
+    const locs = locations.map((l) => `${l.latitude},${l.longitude}`).join('|');
+    const res = await fetch(
+      `https://api.opentopodata.org/v1/srtm90m?locations=${locs}`,
+      { signal: ctrl.signal },
+    );
     const json = await res.json();
     return (json.results as { elevation: number }[]).map((r) => r.elevation);
   } finally {
