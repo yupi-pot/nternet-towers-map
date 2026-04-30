@@ -38,10 +38,12 @@ function rowToTower(row: SupabaseRow): CellTower {
   };
 }
 
+const FETCH_LIMIT = 1000;
+
 export async function fetchTowersFromSupabase(
   bbox: ViewportBBox,
   signal?: AbortSignal,
-): Promise<{ towers: CellTower[]; fetchedBBox: ViewportBBox }> {
+): Promise<{ towers: CellTower[]; fetchedBBox: ViewportBBox; isCapped: boolean }> {
   const resp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/towers_in_bbox`, {
     method: 'POST',
     headers: {
@@ -54,6 +56,7 @@ export async function fetchTowersFromSupabase(
       max_lat: bbox.maxLat,
       min_lon: bbox.minLon,
       max_lon: bbox.maxLon,
+      limit_rows: FETCH_LIMIT,
     }),
     signal,
   });
@@ -65,6 +68,7 @@ export async function fetchTowersFromSupabase(
 
   const rows: SupabaseRow[] = await resp.json();
   const towers = rows.map(rowToTower);
-  console.log(`[Supabase] ${towers.length} towers for bbox`);
-  return { towers, fetchedBBox: bbox };
+  const isCapped = rows.length >= FETCH_LIMIT;
+  console.log(`[Supabase] ${towers.length} towers for bbox${isCapped ? ' (capped)' : ''}`);
+  return { towers, fetchedBBox: bbox, isCapped };
 }

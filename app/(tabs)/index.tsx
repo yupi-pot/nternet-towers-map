@@ -41,8 +41,6 @@ const RADIO_LABEL: Record<CellTower['radio'], string> = {
   GSM: '2G', UMTS: '3G', LTE: '4G LTE', NR: '5G NR',
 };
 
-const MIN_ZOOM     = 9;   // below this: skip markers, show overlay
-const MAX_MARKERS  = 500; // above this cluster count: warn to zoom in
 const RIPPLE_BASE  = 28;  // base ring diameter matching the pin size
 
 // Pulse config per radio type: 2G is subtle, 5G is wide and fast
@@ -275,6 +273,7 @@ export default function MapTab() {
   const router = useRouter();
   const {
     towers,
+    isCapped,
     location, locationLoading, locationError,
     mapRegionRef, refreshCurrentRegion,
   } = useTowersContext();
@@ -454,8 +453,7 @@ export default function MapTab() {
       setRippleItems([]);
       return;
     }
-    const zoom = regionToZoom(region);
-    if (zoom < MIN_ZOOM || clusters.length > MAX_MARKERS) {
+    if (isCapped) {
       setRippleItems([]);
       return;
     }
@@ -509,9 +507,6 @@ export default function MapTab() {
     towers.forEach((t) => c[t.radio]++);
     return c;
   }, [towers]);
-  const zoom = currentRegion ? regionToZoom(currentRegion) : MIN_ZOOM;
-  const tooZoomedOut   = zoom < MIN_ZOOM;
-  const tooManyMarkers = !tooZoomedOut && clusters.length > MAX_MARKERS;
 
   if (locationLoading) {
     return (
@@ -563,7 +558,7 @@ export default function MapTab() {
         showsUserLocation
       >
         {coverageTower && <CoverageOverlay tower={coverageTower} />}
-        {!tooZoomedOut && !tooManyMarkers && clusters.flatMap((item) => {
+        {clusters.flatMap((item) => {
           const [lon, lat] = item.geometry.coordinates;
           if (!isFinite(lat) || !isFinite(lon)) return [];
 
@@ -583,7 +578,7 @@ export default function MapTab() {
                   gsm: counts.gsm ?? 0, umts: counts.umts ?? 0,
                   lte: counts.lte ?? 0, nr:   counts.nr   ?? 0,
                 }}
-                minimized={coverageTower !== null}
+                minimized={isCapped || coverageTower !== null}
                 tracksViewChanges={trackingMarkers}
                 onPress={() => {
                   setRippleItems([]);
@@ -612,12 +607,12 @@ export default function MapTab() {
               <TowerMarker
                 radio={tower.radio}
                 cellid={tower.cellid}
-                minimized={coverageTower !== null && !(
+                minimized={isCapped || (coverageTower !== null && !(
                   tower.mcc === coverageTower.mcc &&
                   tower.mnc === coverageTower.mnc &&
                   tower.lac === coverageTower.lac &&
                   tower.cellid === coverageTower.cellid
-                )}
+                ))}
               />
             </Marker>,
           ];
@@ -632,17 +627,6 @@ export default function MapTab() {
         <SingleRipple key={item.id} {...item} />
       ))}
 
-      {/* ── Zoom / density overlay ── */}
-      {(tooZoomedOut || tooManyMarkers) && (
-        <View style={styles.zoomWarning} pointerEvents="none">
-          <GlassView>
-            <Text style={styles.zoomWarningText}>
-              {tooZoomedOut ? 'Zoom in to see towers' : 'Too many towers — zoom in for detail'}
-            </Text>
-          </GlassView>
-        </View>
-      )}
-
       {/* ── Top controls ── */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
         <LinearGradient
@@ -656,6 +640,7 @@ export default function MapTab() {
           <TouchableOpacity onPress={handleTitleTap} activeOpacity={1} style={styles.titleRow}>
             <Text style={styles.bigTitle}>Found </Text>
             <AnimatedCount value={displayCount} textStyle={styles.bigTitleCount} />
+            {isCapped && <Text style={styles.bigTitleCount}>+</Text>}
             <Text style={styles.bigTitle}> towers</Text>
           </TouchableOpacity>
 
@@ -796,9 +781,6 @@ const styles = StyleSheet.create({
   rippleRing: {
     width: RIPPLE_BASE, height: RIPPLE_BASE, borderRadius: RIPPLE_BASE / 2, borderWidth: 1.5,
   },
-
-  zoomWarning: { position: 'absolute', bottom: 160, left: 0, right: 0, alignItems: 'center' },
-  zoomWarningText: { fontSize: 13, fontWeight: '600', color: '#1c1c1e', paddingVertical: 9, paddingHorizontal: 18 },
 
   locationBtnWrap: { position: 'absolute', bottom: 108, right: 14 },
   sentryDebugBtn:  { position: 'absolute', bottom: 160, right: 14 },

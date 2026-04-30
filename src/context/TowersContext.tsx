@@ -26,6 +26,7 @@ function regionToBBox(region: Region): ViewportBBox {
 interface TowersContextValue {
   towers: CellTower[];
   isLoading: boolean;
+  isCapped: boolean;
   error: string | null;
   location: { latitude: number; longitude: number } | null;
   locationLoading: boolean;
@@ -57,7 +58,7 @@ export function TowersProvider({ children }: { children: React.ReactNode }) {
     setFetchBBox(regionToBBox(initialRegion));
   }, [location]);
 
-  const { towers, isLoading, error } = useTowers(fetchBBox, fetchKey);
+  const { towers, isLoading, isCapped, error } = useTowers(fetchBBox, fetchKey);
 
   const refreshCurrentRegion = useCallback(() => {
     const region = mapRegionRef.current;
@@ -70,6 +71,7 @@ export function TowersProvider({ children }: { children: React.ReactNode }) {
     () => ({
       towers,
       isLoading,
+      isCapped,
       error,
       location,
       locationLoading,
@@ -77,7 +79,7 @@ export function TowersProvider({ children }: { children: React.ReactNode }) {
       mapRegionRef,
       refreshCurrentRegion,
     }),
-    [towers, isLoading, error, location, locationLoading, locationError, refreshCurrentRegion],
+    [towers, isLoading, isCapped, error, location, locationLoading, locationError, refreshCurrentRegion],
   );
 
   return <TowersContext.Provider value={value}>{children}</TowersContext.Provider>;

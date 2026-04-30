@@ -7,6 +7,7 @@ interface UseTowersResult {
   towers: CellTower[];
   fetchedBBox: ViewportBBox | null;
   isLoading: boolean;
+  isCapped: boolean;
   error: string | null;
 }
 
@@ -17,6 +18,7 @@ export function useTowers(
   const [towers, setTowers] = useState<CellTower[]>([]);
   const [fetchedBBox, setFetchedBBox] = useState<ViewportBBox | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCapped, setIsCapped] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -45,7 +47,7 @@ export function useTowers(
       const bboxArg = { minLat, maxLat, minLon, maxLon };
 
       try {
-        const { towers: result, fetchedBBox: resultBBox } = await fetchTowersFromSupabase(bboxArg, ac.signal);
+        const { towers: result, fetchedBBox: resultBBox, isCapped: resultCapped } = await fetchTowersFromSupabase(bboxArg, ac.signal);
 
         // Merge new towers into the accumulated cache so already-visible towers
         // don't blink out when panning to a slightly different region.
@@ -83,6 +85,7 @@ export function useTowers(
           setTowers(visible);
         }
 
+        setIsCapped(resultCapped);
         setFetchedBBox(resultBBox);
       } catch (err: unknown) {
         // Ignore aborted requests — a newer fetch is already in flight
@@ -100,5 +103,5 @@ export function useTowers(
     };
   }, [minLat, maxLat, minLon, maxLon, fetchKey]);
 
-  return { towers, fetchedBBox, isLoading, error };
+  return { towers, fetchedBBox, isLoading, isCapped, error };
 }
