@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { CellTower } from '@/src/types';
 
-const NUM_ANGLES = 36;
-const NUM_RADII = 10;
+const NUM_ANGLES = 24;
+const NUM_RADII = 4;
 const TOWER_HEIGHT_M = 30;
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_RADIUS_M = 25000;
@@ -68,6 +68,9 @@ async function fetchElevationBatch(
     { signal },
   );
   const json = await res.json();
+  if (!Array.isArray(json.results)) {
+    throw new Error(`opentopodata error: ${json.error ?? json.status ?? res.status}`);
+  }
   return (json.results as { elevation: number }[]).map((r) => r.elevation);
 }
 
