@@ -421,11 +421,10 @@ const styles = StyleSheet.create({
   // ── Image slide ──
   imagePage: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f3f4f3',
   },
   imageArea: {
     flex: 1,
-    paddingTop: 24,
   },
   slideImage: {
     flex: 1,
