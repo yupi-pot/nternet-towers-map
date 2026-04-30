@@ -25,7 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getCarrierColor, getCarrierName } from '@/src/utils/carrierNames';
+import { getCarrierName } from '@/src/utils/carrierNames';
 import {
   bearingTo,
   CONFIDENCE_COLOR,
@@ -93,7 +93,6 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
   if (!tower) return null;
 
   const carrier = getCarrierName(tower.mcc, tower.mnc);
-  const carrierColor = getCarrierColor(tower.mcc, tower.mnc);
   const conf = confidenceLevel(tower.samples);
   const enodebId = tower.radio === 'LTE' ? tower.cellid >> 8 : null;
 
@@ -157,7 +156,7 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
               <View style={[styles.networkBadge, { backgroundColor: RADIO_COLORS[tower.radio] }]}>
                 <Text style={styles.networkBadgeText}>{RADIO_LABELS[tower.radio]}</Text>
               </View>
-              <Text style={[styles.carrierName, carrierColor ? { color: carrierColor } : null]}>{carrier}</Text>
+              <Text style={styles.carrierName}>{carrier}</Text>
             </View>
 
             <TouchableOpacity
