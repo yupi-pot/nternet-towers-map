@@ -202,8 +202,8 @@ export default function ListTab() {
       {/* ── iOS 26-style navigation header ── */}
       <GlassHeader paddingTop={insets.top}>
         <View style={styles.titleRow}>
-          <Text style={styles.largeTitle}>Towers</Text>
-          <Text style={styles.countBadge}>
+          <Text style={styles.largeTitle}>Towers </Text>
+          <Text style={styles.largeCount}>
             {isLoading ? '…' : totalFiltered}
           </Text>
         </View>
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   },
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: 10,
   },
   largeTitle: {
@@ -304,6 +304,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#9ca3af',
     marginTop: 4,
+  },
+  largeCount: {
+    fontSize: 36,
+    fontWeight: '600',
+    color: '#9ca3af',
+    letterSpacing: -0.5,
   },
   filterRow: {
     flexDirection: 'row',

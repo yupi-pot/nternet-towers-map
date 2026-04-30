@@ -202,22 +202,24 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
           )}
 
           {/* Detail rows */}
-          <View style={styles.details}>
-            <InfoRow label="Cell ID" value={String(tower.cellid)} />
-            <InfoRow label="MCC / MNC" value={`${tower.mcc} / ${tower.mnc}`} />
-            <InfoRow label="LAC" value={String(tower.lac)} />
-            <TouchableOpacity onPress={handleCopyCoords}>
-              <InfoRow
-                label="Coordinates"
-                value={`${tower.lat.toFixed(5)}, ${tower.lon.toFixed(5)}`}
-                action="Copy"
-              />
-            </TouchableOpacity>
-            <InfoRow label="Coverage radius" value={`~${tower.range.toLocaleString()} m`} />
-            <InfoRow label="Measurements" value={`${tower.samples.toLocaleString()}`} />
-            {tower.averageSignalStrength !== 0 && (
-              <InfoRow label="Avg signal" value={`${tower.averageSignalStrength} dBm`} />
-            )}
+          <View style={styles.contentBlock}>
+            <View style={styles.details}>
+              <InfoRow label="Cell ID" value={String(tower.cellid)} />
+              <InfoRow label="MCC / MNC" value={`${tower.mcc} / ${tower.mnc}`} />
+              <InfoRow label="LAC" value={String(tower.lac)} />
+              <TouchableOpacity onPress={handleCopyCoords}>
+                <InfoRow
+                  label="Coordinates"
+                  value={`${tower.lat.toFixed(5)}, ${tower.lon.toFixed(5)}`}
+                  action="Copy"
+                />
+              </TouchableOpacity>
+              <InfoRow label="Coverage radius" value={`~${tower.range.toLocaleString()} m`} />
+              <InfoRow label="Measurements" value={`${tower.samples.toLocaleString()}`} />
+              {tower.averageSignalStrength !== 0 && (
+                <InfoRow label="Avg signal" value={`${tower.averageSignalStrength} dBm`} />
+              )}
+            </View>
           </View>
 
           {/* Action buttons */}
@@ -309,10 +311,20 @@ const styles = StyleSheet.create({
   compassWrap: { alignItems: 'center' },
   compassArrow: { fontSize: 22, color: '#3b82f6', marginTop: 4, fontWeight: '700' },
 
-  details: { gap: 0, marginBottom: 16 },
+  contentBlock: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  details: { gap: 0, paddingHorizontal: 14 },
   infoRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: '#f1f5f9',
+    paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: '#edf2f7',
   },
   infoRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   infoLabel: { fontSize: 14, color: '#64748b' },
