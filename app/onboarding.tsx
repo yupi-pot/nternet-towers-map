@@ -72,7 +72,7 @@ const PAGES: Page[] = [
     key: 'database',
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    image: require('../assets/images/onboarding-tower.jpg'),
+    image: require('../assets/images/onboarding-tower.png'),
     title: 'Coverage maps\nlie to you.',
     body: 'Carrier maps show where they hope you have signal. Ours cross-references real tower registrations — verified, confidence-rated, and refreshed every few days.',
   },
