@@ -26,7 +26,7 @@ const { width, height } = Dimensions.get('window');
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const BG = '#f6f2ed';
-const ACCENT = '#3b82f6';
+const ACCENT = '#111827';
 const TITLE_COLOR = '#111827';
 const BODY_COLOR = '#6b7280';
 const DIVIDER = '#e0d9d0';
@@ -47,7 +47,6 @@ interface IconPage {
   icon: IoniconsName;
   title: string;
   body: string;
-  badge?: string;
   isPermission?: boolean;
 }
 
@@ -65,7 +64,6 @@ const PAGES: Page[] = [
     icon: 'layers-outline',
     title: 'Coverage maps\nlie to you.',
     body: 'Carrier maps show where they hope you have signal. Ours cross-references real tower registrations — verified, confidence-rated, and refreshed every few days.',
-    badge: '4.5M towers · 200+ countries · refreshed every few days',
   },
   {
     key: 'antenna',
@@ -183,12 +181,6 @@ function IconSlide({ page, isActive }: { page: IconPage; isActive: boolean }) {
       <View style={styles.textArea}>
         <Text style={styles.title}>{page.title}</Text>
         <Text style={styles.body}>{page.body}</Text>
-        {page.badge ? (
-          <View style={styles.slideBadge}>
-            <View style={styles.slideBadgeDot} />
-            <Text style={styles.slideBadgeText}>{page.badge}</Text>
-          </View>
-        ) : null}
       </View>
     </View>
   );
@@ -214,8 +206,6 @@ export default function OnboardingScreen() {
     if (isLast) { finish(); return; }
     flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
   };
-
-  const handleSkip = () => finish();
 
   const handleRequestLocation = async () => {
     try {
@@ -293,41 +283,29 @@ export default function OnboardingScreen() {
             ))}
           </View>
 
-          {/* Buttons */}
-          <View style={styles.btnRow}>
-            {!isLast ? (
-              <TouchableOpacity style={styles.skipBtn} onPress={handleSkip} activeOpacity={0.7}>
-                <Text style={styles.skipText}>Skip</Text>
+          {/* Full-width button */}
+          {isLast ? (
+            locationGranted ? (
+              <TouchableOpacity style={styles.nextBtn} onPress={finish} activeOpacity={0.85}>
+                <Text style={styles.nextText}>Done ✓</Text>
               </TouchableOpacity>
             ) : (
-              <View style={styles.skipBtn} />
-            )}
-
-            {isLast ? (
-              locationGranted ? (
-                <TouchableOpacity style={styles.nextBtn} onPress={finish} activeOpacity={0.7}>
-                  <Text style={[styles.nextText, { color: '#22c55e' }]}>Done ✓</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={styles.nextBtn}
-                  onPress={handleRequestLocation}
-                  disabled={requesting}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.nextText}>
-                    {requesting ? 'Requesting…' : 'Allow Location →'}
-                  </Text>
-                </TouchableOpacity>
-              )
-            ) : (
-              <TouchableOpacity style={styles.nextBtn} onPress={handleNext} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.nextBtn}
+                onPress={handleRequestLocation}
+                disabled={requesting}
+                activeOpacity={0.85}
+              >
                 <Text style={styles.nextText}>
-                  {(currentPage as IconPage)?.isPermission ? 'Allow Location →' : 'Next →'}
+                  {requesting ? 'Requesting…' : 'Allow Location →'}
                 </Text>
               </TouchableOpacity>
-            )}
-          </View>
+            )
+          ) : (
+            <TouchableOpacity style={styles.nextBtn} onPress={handleNext} activeOpacity={0.85}>
+              <Text style={styles.nextText}>Next →</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </View>
@@ -425,48 +403,22 @@ const styles = StyleSheet.create({
     minHeight: 160,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '800',
     color: TITLE_COLOR,
-    lineHeight: 34,
+    lineHeight: 40,
     marginBottom: 14,
     letterSpacing: -0.5,
   },
   body: {
-    fontSize: 16,
+    fontSize: 18,
     color: BODY_COLOR,
-    lineHeight: 24,
-  },
-
-  slideBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(59,130,246,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.16)',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginTop: 18,
-    alignSelf: 'flex-start',
-  },
-  slideBadgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#22c55e',
-  },
-  slideBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: ACCENT,
-    letterSpacing: 0.2,
+    lineHeight: 26,
   },
 
   // ── Bottom controls ──
   bottom: {
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     gap: 16,
     backgroundColor: BG,
   },
@@ -478,32 +430,16 @@ const styles = StyleSheet.create({
   dot: { height: 6, borderRadius: 3 },
   dotActive: { width: 20, backgroundColor: ACCENT },
   dotInactive: { width: 6, backgroundColor: '#d1c9bf' },
-
-  btnRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  skipBtn: {
-    backgroundColor: '#e8e2da',
-    borderRadius: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 22,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  skipText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
   nextBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    backgroundColor: ACCENT,
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
   },
   nextText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
-    color: ACCENT,
+    color: '#ffffff',
+    letterSpacing: 0.1,
   },
 });
