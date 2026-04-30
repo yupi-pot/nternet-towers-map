@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import TowerDetailModal from '@/src/components/TowerDetailModal';
 import { useTowersContext } from '@/src/context/TowersContext';
-import { getCarrierName } from '@/src/utils/carrierNames';
+import { getCarrierColor, getCarrierName } from '@/src/utils/carrierNames';
 import {
   bearingTo,
   CONFIDENCE_COLOR,
@@ -69,7 +69,9 @@ function NearestTowerCard({ item, onPress }: { item: RowItem; onPress: (t: CellT
   const { tower, dist, bearing } = item;
   const color = RADIO_COLORS[tower.radio];
   const carrier = getCarrierName(tower.mcc, tower.mnc);
+  const carrierColor = getCarrierColor(tower.mcc, tower.mnc);
   const conf = confidenceLevel(tower.samples);
+  const enodebId = tower.radio === 'LTE' ? tower.cellid >> 8 : null;
 
   return (
     <TouchableOpacity
@@ -97,11 +99,12 @@ function NearestTowerCard({ item, onPress }: { item: RowItem; onPress: (t: CellT
         </View>
 
         {/* Carrier */}
-        <Text style={styles.heroCarrier} numberOfLines={1}>{carrier}</Text>
+        <Text style={[styles.heroCarrier, carrierColor ? { color: carrierColor } : null]} numberOfLines={1}>{carrier}</Text>
 
         {/* Detail grid */}
         <View style={styles.heroGrid}>
           <HeroCell label="Cell ID" value={String(tower.cellid)} />
+          {enodebId != null && <HeroCell label="eNodeB" value={String(enodebId)} />}
           <HeroCell label="MCC / MNC" value={`${tower.mcc} / ${tower.mnc}`} />
           <HeroCell label="LAC" value={String(tower.lac)} />
           <HeroCell label="Coverage" value={`~${tower.range.toLocaleString()} m`} />
@@ -140,6 +143,7 @@ function TowerRow({ item, onPress }: { item: RowItem; onPress: (t: CellTower) =>
   const { tower, dist } = item;
   const color = RADIO_COLORS[tower.radio];
   const carrier = getCarrierName(tower.mcc, tower.mnc);
+  const carrierColor = getCarrierColor(tower.mcc, tower.mnc);
 
   return (
     <TouchableOpacity style={styles.row} onPress={() => onPress(tower)} activeOpacity={0.65}>
@@ -153,7 +157,7 @@ function TowerRow({ item, onPress }: { item: RowItem; onPress: (t: CellTower) =>
 
       {/* Info */}
       <View style={styles.rowBody}>
-        <Text style={styles.carrierName} numberOfLines={1}>{carrier}</Text>
+        <Text style={[styles.carrierName, carrierColor ? { color: carrierColor } : null]} numberOfLines={1}>{carrier}</Text>
         <Text style={styles.rowSub}>
           Cell {tower.cellid}{tower.range > 0 ? `  ·  ~${tower.range} m` : ''}
         </Text>
