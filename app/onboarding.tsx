@@ -208,6 +208,12 @@ function ImageSlide({ page }: { page: ImagePage }) {
           style={styles.slideImage}
           resizeMode="contain"
         />
+        <LinearGradient
+          colors={['transparent', '#f3f4f3']}
+          locations={[0.95, 1]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
       </View>
       {/* Text pinned to the bottom */}
       <View style={styles.imageTextArea}>
