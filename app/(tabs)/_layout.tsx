@@ -13,7 +13,7 @@ export default function TabLayout() {
           <Label>Map</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="two">
-          <Icon sf={{ default: 'list.bullet', selected: 'list.bullet' }} />
+          <Icon sf={{ default: 'rectangle.grid.1x2', selected: 'rectangle.grid.1x2.fill' }} />
           <Label>List</Label>
         </NativeTabs.Trigger>
       </NativeTabs>

@@ -186,7 +186,7 @@ const ClusterMarker = React.memo(function ClusterMarker({
     >
       <View collapsable={false}>
         {minimized
-          ? <View style={styles.clusterDot} />
+          ? <View style={[styles.clusterDot, { backgroundColor: RADIO_COLORS[dominantRadio(counts)] }]} />
           : <ClusterPie counts={counts} total={pointCount} />
         }
       </View>
@@ -688,7 +688,7 @@ const SHADOW = {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  clusterDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(120,120,120,0.5)' },
+  clusterDot: { width: 6, height: 6, borderRadius: 3, opacity: 0.6 },
   saturationOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 150, 0, 0.10)',
