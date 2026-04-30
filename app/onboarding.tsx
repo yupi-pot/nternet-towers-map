@@ -80,7 +80,7 @@ const PAGES: Page[] = [
     key: 'antenna',
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    image: require('../assets/images/onboarding-rooftop.jpg'),
+    image: require('../assets/images/onboarding-antenna.jpg'),
     title: 'Stop pointing your\nantenna blind.',
     body: 'Get the exact compass bearing to any tower. No guessing, no wasted install. Essential for signal boosters, rooftop antennas, and rural setups.',
   },
