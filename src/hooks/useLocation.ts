@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import * as Location from 'expo-location';
 import { UserLocation } from '../types';
 
@@ -12,50 +13,62 @@ export function useLocation(): UseLocationResult {
   const [location, setLocation] = useState<UserLocation | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const subscriptionRef = useRef<Location.LocationSubscription | null>(null);
+  const startedRef = useRef(false);
 
-  useEffect(() => {
-    let subscription: Location.LocationSubscription | null = null;
+  async function startWatching() {
+    if (startedRef.current) return;
 
-    async function start() {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
+    const { status } = await Location.getForegroundPermissionsAsync();
 
-        if (status !== 'granted') {
-          setErrorMsg('Location access denied.\nPlease enable it in phone settings.');
-          setIsLoading(false);
-          return;
-        }
-
-        const initial = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        setLocation({
-          latitude: initial.coords.latitude,
-          longitude: initial.coords.longitude,
-        });
-        setIsLoading(false);
-
-        subscription = await Location.watchPositionAsync(
-          { accuracy: Location.Accuracy.Balanced, distanceInterval: 50 },
-          (pos) => {
-            setLocation({
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-            });
-          }
-        );
-      } catch (error) {
-        console.error('[useLocation]', error);
-        setErrorMsg('Failed to get location');
-        setIsLoading(false);
-      }
+    if (status !== 'granted') {
+      // Permission not yet granted — onboarding will request it.
+      // Don't show the system dialog here.
+      setIsLoading(false);
+      return;
     }
 
-    start();
+    startedRef.current = true;
+
+    try {
+      const initial = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      setLocation({
+        latitude: initial.coords.latitude,
+        longitude: initial.coords.longitude,
+      });
+      setIsLoading(false);
+
+      subscriptionRef.current = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.Balanced, distanceInterval: 50 },
+        (pos) => {
+          setLocation({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          });
+        },
+      );
+    } catch (error) {
+      console.error('[useLocation]', error);
+      setErrorMsg('Failed to get location');
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    startWatching();
+
+    // Re-check when the user returns from Settings after enabling location.
+    const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
+      if (state === 'active') startWatching();
+    });
 
     return () => {
-      subscription?.remove();
+      sub.remove();
+      subscriptionRef.current?.remove();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { location, errorMsg, isLoading };

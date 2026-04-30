@@ -84,7 +84,7 @@ const PAGES: Page[] = [
     type: 'icon',
     icon: 'location-outline',
     title: 'One permission,\nthen you\'re in.',
-    body: 'We use your location to find the towers nearest to you. It never leaves your device.',
+    body: 'Required to find towers near you and calculate distances. Your location is never stored or shared.',
     isPermission: true,
   },
 ];

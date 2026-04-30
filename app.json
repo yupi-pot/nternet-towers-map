@@ -50,7 +50,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "This app needs your location to show nearby cell towers."
+          "locationWhenInUsePermission": "Your location is used to find nearby cell towers, calculate distances, and show compass bearing for antenna alignment."
         }
       ],
       "expo-secure-store",
