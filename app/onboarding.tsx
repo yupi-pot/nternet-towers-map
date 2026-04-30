@@ -415,13 +415,15 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   videoNextBtn: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     paddingVertical: 18,
     alignItems: 'center',
   },
   videoNextText: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#111827',
     letterSpacing: 0.1,
   },
 
