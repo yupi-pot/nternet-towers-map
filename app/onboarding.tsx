@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -50,7 +51,16 @@ interface IconPage {
   isPermission?: boolean;
 }
 
-type Page = VideoPage | IconPage;
+interface ImagePage {
+  key: string;
+  type: 'image';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  image: any;
+  title: string;
+  body: string;
+}
+
+type Page = VideoPage | IconPage | ImagePage;
 
 const PAGES: Page[] = [
   {
@@ -60,8 +70,9 @@ const PAGES: Page[] = [
   },
   {
     key: 'database',
-    type: 'icon',
-    icon: 'layers-outline',
+    type: 'image',
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    image: require('../assets/images/onboarding-tower.jpg'),
     title: 'Coverage maps\nlie to you.',
     body: 'Carrier maps show where they hope you have signal. Ours cross-references real tower registrations — verified, confidence-rated, and refreshed every few days.',
   },
@@ -186,6 +197,23 @@ function IconSlide({ page, isActive }: { page: IconPage; isActive: boolean }) {
   );
 }
 
+// ─── Image slide ─────────────────────────────────────────────────────────────
+function ImageSlide({ page }: { page: ImagePage }) {
+  return (
+    <View style={[styles.page, { width }]}>
+      <Image
+        source={page.image}
+        style={styles.slideImage}
+        resizeMode="cover"
+      />
+      <View style={styles.textArea}>
+        <Text style={styles.title}>{page.title}</Text>
+        <Text style={styles.body}>{page.body}</Text>
+      </View>
+    </View>
+  );
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -254,6 +282,8 @@ export default function OnboardingScreen() {
         renderItem={({ item, index }) =>
           item.type === 'video' ? (
             <VideoSlide isActive={index === currentIndex} title={item.title} />
+          ) : item.type === 'image' ? (
+            <ImageSlide page={item} />
           ) : (
             <IconSlide page={item} isActive={index === currentIndex} />
           )
@@ -384,8 +414,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
 
-  // ── Icon slide ──
+  // ── Icon / Image slide ──
   page: { flex: 1 },
+  slideImage: {
+    width,
+    height: height * 0.52,
+  },
   iconArea: {
     flex: 1,
     alignItems: 'center',
