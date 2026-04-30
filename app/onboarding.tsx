@@ -94,11 +94,11 @@ const PAGES: Page[] = [
   },
   {
     key: 'location',
-    type: 'icon',
-    icon: 'location-outline',
+    type: 'image',
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    image: require('../assets/images/onboarding-location.jpg'),
     title: 'One permission,\nthen you\'re in.',
     body: 'Required to find towers near you and calculate distances. Your location is never stored or shared.',
-    isPermission: true,
   },
 ];
 
