@@ -31,7 +31,7 @@ const RADIO_SHORT: Record<CellTower['radio'], string> = {
   GSM: '2G', UMTS: '3G', LTE: '4G', NR: '5G',
 };
 const RADIO_LABEL: Record<CellTower['radio'], string> = {
-  GSM: '2G', UMTS: '3G', LTE: '4G LTE', NR: '5G NR',
+  GSM: '2G', UMTS: '3G', LTE: '4G LTE', NR: '5G',
 };
 
 // ─── White header ─────────────────────────────────────────────────────────────

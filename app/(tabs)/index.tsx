@@ -39,7 +39,7 @@ import { CellTower, RADIO_COLORS } from '@/src/types';
 
 const ALL_RADIOS: CellTower['radio'][] = ['GSM', 'UMTS', 'LTE', 'NR'];
 const RADIO_LABEL: Record<CellTower['radio'], string> = {
-  GSM: '2G', UMTS: '3G', LTE: '4G LTE', NR: '5G NR',
+  GSM: '2G', UMTS: '3G', LTE: '4G LTE', NR: '5G',
 };
 
 const RIPPLE_BASE  = 28;  // base ring diameter matching the pin size
