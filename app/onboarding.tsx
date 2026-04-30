@@ -260,6 +260,18 @@ export default function OnboardingScreen() {
         }
       />
 
+      {/* Dots — top of screen, hidden on video slide */}
+      {!isVideoSlide && (
+        <View style={[styles.dotsTop, { top: insets.top + 16 }]} pointerEvents="none">
+          {PAGES.map((_, i) => (
+            <View
+              key={i}
+              style={[styles.dot, i === currentIndex ? styles.dotActive : styles.dotInactive]}
+            />
+          ))}
+        </View>
+      )}
+
       {/* Bottom controls — hidden on video slide (tap to advance) */}
       {isVideoSlide ? (
         <TouchableOpacity
@@ -273,16 +285,6 @@ export default function OnboardingScreen() {
         </TouchableOpacity>
       ) : (
         <View style={[styles.bottom, { paddingBottom: insets.bottom + 12 }]}>
-          {/* Dots */}
-          <View style={styles.dots}>
-            {PAGES.map((_, i) => (
-              <View
-                key={i}
-                style={[styles.dot, i === currentIndex ? styles.dotActive : styles.dotInactive]}
-              />
-            ))}
-          </View>
-
           {/* Full-width button */}
           {isLast ? (
             locationGranted ? (
@@ -416,16 +418,21 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
 
-  // ── Bottom controls ──
-  bottom: {
-    paddingHorizontal: 24,
-    gap: 16,
-    backgroundColor: BG,
-  },
-  dots: {
+  // ── Dots (top overlay) ──
+  dotsTop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 6,
+  },
+
+  // ── Bottom controls ──
+  bottom: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    backgroundColor: BG,
   },
   dot: { height: 6, borderRadius: 3 },
   dotActive: { width: 20, backgroundColor: ACCENT },
