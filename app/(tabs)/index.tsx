@@ -681,8 +681,8 @@ export default function MapTab() {
 
       <TowerDetailModal
         tower={selectedTower}
-        userLat={location.latitude}
-        userLon={location.longitude}
+        userLat={location?.latitude ?? null}
+        userLon={location?.longitude ?? null}
         onClose={() => setSelectedTower(null)}
       />
 
