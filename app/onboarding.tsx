@@ -73,8 +73,8 @@ const PAGES: Page[] = [
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-tower.jpg'),
-    title: 'Official coverage maps are guesswork.',
-    body: 'Carrier maps show where they hope you have signal. Ours cross-references real tower registrations — verified, confidence-rated, and refreshed every few days.',
+    title: 'Real towers. Verified locations.',
+    body: 'Carrier coverage maps are guesswork — painted to look good, not to be accurate. Ours cross-references real tower registrations, confidence-rated and refreshed every few days.',
   },
   {
     key: 'antenna',
@@ -89,8 +89,8 @@ const PAGES: Page[] = [
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-terrain.jpg'),
-    title: "Signal doesn't care\nyou're in a valley.",
-    body: 'Our coverage calculation accounts for terrain elevation — so you know if a tower can actually reach you, not just how far away it is.',
+    title: 'Hills block signal. We know that.',
+    body: 'Most apps ignore elevation. Ours accounts for every hill and valley between you and the tower — so you see where signal actually reaches, not just the distance.',
   },
   {
     key: 'location',
