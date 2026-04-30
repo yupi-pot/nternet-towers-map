@@ -56,19 +56,34 @@ function buildPolygon(
   });
 }
 
+const BATCH_SIZE = 100;
+
+async function fetchElevationBatch(
+  locations: { latitude: number; longitude: number }[],
+  signal: AbortSignal,
+): Promise<number[]> {
+  const locs = locations.map((l) => `${l.latitude},${l.longitude}`).join('|');
+  const res = await fetch(
+    `https://api.opentopodata.org/v1/srtm90m?locations=${locs}`,
+    { signal },
+  );
+  const json = await res.json();
+  return (json.results as { elevation: number }[]).map((r) => r.elevation);
+}
+
 async function fetchElevations(
   locations: { latitude: number; longitude: number }[],
 ): Promise<number[]> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
-    const locs = locations.map((l) => `${l.latitude},${l.longitude}`).join('|');
-    const res = await fetch(
-      `https://api.opentopodata.org/v1/srtm90m?locations=${locs}`,
-      { signal: ctrl.signal },
-    );
-    const json = await res.json();
-    return (json.results as { elevation: number }[]).map((r) => r.elevation);
+    const results: number[] = [];
+    for (let i = 0; i < locations.length; i += BATCH_SIZE) {
+      const batch = locations.slice(i, i + BATCH_SIZE);
+      const elevs = await fetchElevationBatch(batch, ctrl.signal);
+      results.push(...elevs);
+    }
+    return results;
   } finally {
     clearTimeout(timer);
   }
