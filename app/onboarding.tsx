@@ -208,7 +208,7 @@ function ImageSlide({ page }: { page: ImagePage }) {
         <Image
           source={page.image}
           style={styles.slideImage}
-          resizeMode="contain"
+          resizeMode="cover"
         />
         <LinearGradient
           colors={['rgba(243,244,243,0)', '#f3f4f3']}
