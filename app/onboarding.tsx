@@ -73,7 +73,7 @@ const PAGES: Page[] = [
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-tower.jpg'),
-    title: 'Real towers. Verified locations.',
+    title: 'Real towers. Verified locations',
     body: 'Carrier coverage maps are guesswork — painted to look good, not to be accurate. Ours cross-references real tower registrations, confidence-rated and refreshed every few days.',
   },
   {
@@ -81,7 +81,7 @@ const PAGES: Page[] = [
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-antenna.jpg'),
-    title: 'Stop pointing your\nantenna blind.',
+    title: 'Stop pointing your\nantenna blind',
     body: 'Get the exact compass bearing to any tower. No guessing, no wasted install. Essential for signal boosters, rooftop antennas, and rural setups.',
   },
   {
@@ -89,7 +89,7 @@ const PAGES: Page[] = [
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-terrain.jpg'),
-    title: 'Hills block signal. We know that.',
+    title: 'Hills block signal. We know that',
     body: 'Most apps ignore elevation. Ours accounts for every hill and valley between you and the tower — so you see where signal actually reaches, not just the distance.',
   },
   {
@@ -97,7 +97,7 @@ const PAGES: Page[] = [
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-location.jpg'),
-    title: 'One permission,\nthen you\'re in.',
+    title: 'One permission,\nthen you\'re in',
     body: 'Required to find towers near you and calculate distances. Your location is never stored or shared.',
   },
 ];
