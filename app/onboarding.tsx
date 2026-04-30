@@ -47,6 +47,7 @@ interface IconPage {
   icon: IoniconsName;
   title: string;
   body: string;
+  badge?: string;
   isPermission?: boolean;
 }
 
@@ -59,32 +60,33 @@ const PAGES: Page[] = [
     title: 'Cell Tower Map',
   },
   {
-    key: 'discover',
+    key: 'database',
     type: 'icon',
-    icon: 'radio-outline',
-    title: 'Find any tower,\nanywhere.',
-    body: 'Real tower locations using cross-referenced data — more accurate than FCC coverage maps.',
+    icon: 'layers-outline',
+    title: 'Coverage maps\nlie to you.',
+    body: 'Carrier maps show where they hope you have signal. Ours cross-references real tower registrations — verified, confidence-rated, and refreshed every few days.',
+    badge: '4.5M towers · 200+ countries · refreshed every few days',
   },
   {
-    key: 'accurate',
-    type: 'icon',
-    icon: 'shield-checkmark-outline',
-    title: 'Data you can\ntrust.',
-    body: 'Every tower carries a confidence rating based on real-world measurements. No ghost towers, no guesses.',
-  },
-  {
-    key: 'navigate',
+    key: 'antenna',
     type: 'icon',
     icon: 'compass-outline',
-    title: 'Point your antenna\nexactly right.',
-    body: 'Compass bearing tells you precisely which direction to face — essential for signal boosters and rural installs.',
+    title: 'Stop pointing your\nantenna blind.',
+    body: 'Get the exact compass bearing to any tower. No guessing, no wasted install. Essential for signal boosters, rooftop antennas, and rural setups.',
+  },
+  {
+    key: 'terrain',
+    type: 'icon',
+    icon: 'trending-up-outline',
+    title: "Signal doesn't care\nyou're in a valley.",
+    body: 'Our coverage calculation accounts for terrain elevation — so you know if a tower can actually reach you, not just how far away it is.',
   },
   {
     key: 'location',
     type: 'icon',
     icon: 'location-outline',
-    title: 'One permission\nneeded.',
-    body: 'We use your location to find towers nearby. We never store it or share it with anyone.',
+    title: 'One permission,\nthen you\'re in.',
+    body: 'We use your location to find the towers nearest to you. It never leaves your device.',
     isPermission: true,
   },
 ];
@@ -181,6 +183,12 @@ function IconSlide({ page, isActive }: { page: IconPage; isActive: boolean }) {
       <View style={styles.textArea}>
         <Text style={styles.title}>{page.title}</Text>
         <Text style={styles.body}>{page.body}</Text>
+        {page.badge ? (
+          <View style={styles.slideBadge}>
+            <View style={styles.slideBadgeDot} />
+            <Text style={styles.slideBadgeText}>{page.badge}</Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -428,6 +436,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: BODY_COLOR,
     lineHeight: 24,
+  },
+
+  slideBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(59,130,246,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.16)',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginTop: 18,
+    alignSelf: 'flex-start',
+  },
+  slideBadgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#22c55e',
+  },
+  slideBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: ACCENT,
+    letterSpacing: 0.2,
   },
 
   // ── Bottom controls ──
