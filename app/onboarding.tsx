@@ -209,8 +209,8 @@ function ImageSlide({ page }: { page: ImagePage }) {
           resizeMode="contain"
         />
         <LinearGradient
-          colors={['transparent', '#f3f4f3']}
-          locations={[0.95, 1]}
+          colors={['rgba(243,244,243,0)', '#f3f4f3']}
+          locations={[0.92, 1]}
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
         />
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: '600',
     color: TITLE_COLOR,
-    lineHeight: 44,
+    lineHeight: 38,
     marginBottom: 14,
     letterSpacing: -0.5,
   },
