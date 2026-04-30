@@ -200,13 +200,17 @@ function IconSlide({ page, isActive }: { page: IconPage; isActive: boolean }) {
 // ─── Image slide ─────────────────────────────────────────────────────────────
 function ImageSlide({ page }: { page: ImagePage }) {
   return (
-    <View style={[styles.page, { width }]}>
-      <Image
-        source={page.image}
-        style={styles.slideImage}
-        resizeMode="cover"
-      />
-      <View style={styles.textArea}>
+    <View style={[styles.imagePage, { width }]}>
+      {/* Image fills all space above the text block */}
+      <View style={styles.imageArea}>
+        <Image
+          source={page.image}
+          style={styles.slideImage}
+          resizeMode="contain"
+        />
+      </View>
+      {/* Text pinned to the bottom */}
+      <View style={styles.imageTextArea}>
         <Text style={styles.title}>{page.title}</Text>
         <Text style={styles.body}>{page.body}</Text>
       </View>
@@ -414,12 +418,27 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
 
-  // ── Icon / Image slide ──
-  page: { flex: 1 },
-  slideImage: {
-    width,
-    height: height * 0.52,
+  // ── Image slide ──
+  imagePage: {
+    flex: 1,
+    backgroundColor: '#ffffff',
   },
+  imageArea: {
+    flex: 1,
+    paddingTop: 24,
+  },
+  slideImage: {
+    flex: 1,
+    width: '100%',
+  },
+  imageTextArea: {
+    paddingHorizontal: 32,
+    paddingBottom: 28,
+    paddingTop: 20,
+  },
+
+  // ── Icon slide ──
+  page: { flex: 1 },
   iconArea: {
     flex: 1,
     alignItems: 'center',
@@ -436,7 +455,6 @@ const styles = StyleSheet.create({
   textArea: {
     paddingHorizontal: 32,
     paddingBottom: 16,
-    minHeight: 160,
   },
   title: {
     fontSize: 36,
