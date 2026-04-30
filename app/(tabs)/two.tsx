@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   FlatList,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -236,7 +237,7 @@ export default function ListTab() {
           </Text>
         </View>
 
-        <View style={styles.filterRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           {ALL_RADIOS.map((radio) => {
             const active = activeFilters.has(radio);
             const color = RADIO_COLORS[radio];
@@ -262,7 +263,7 @@ export default function ListTab() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </WhiteHeader>
 
       {/* ── Content ── */}
@@ -344,7 +345,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
   },
   pill: {
     flexDirection: 'row',

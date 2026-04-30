@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -616,8 +617,8 @@ export default function MapTab() {
             <Text style={styles.bigTitle}> towers</Text>
           </TouchableOpacity>
 
-          {/* Filter pills — single line, styled like list tab */}
-          <View style={styles.chipRow}>
+          {/* Filter pills — single line horizontal scroll */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
             <TouchableOpacity
               onPress={handleAllChip}
               style={[styles.chip, isAllActive ? styles.chipAll : styles.chipInactive]}
@@ -650,7 +651,7 @@ export default function MapTab() {
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
         </View>
       </SafeAreaView>
 
@@ -688,7 +689,7 @@ const SHADOW = {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  clusterDot: { width: 6, height: 6, borderRadius: 3, opacity: 0.6 },
+  clusterDot: { width: 6, height: 6, borderRadius: 3, opacity: 0.85 },
   saturationOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 150, 0, 0.10)',

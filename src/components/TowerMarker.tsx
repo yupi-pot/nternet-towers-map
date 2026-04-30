@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    opacity: 0.5,
+    opacity: 0.85,
   },
   label: {
     fontSize: 10,
