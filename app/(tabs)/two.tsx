@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import React, { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,9 +15,11 @@ import TowerDetailModal from '@/src/components/TowerDetailModal';
 import { useTowersContext } from '@/src/context/TowersContext';
 import { getCarrierName } from '@/src/utils/carrierNames';
 import {
+  bearingTo,
   CONFIDENCE_COLOR,
   CONFIDENCE_LABEL,
   confidenceLevel,
+  formatBearing,
   formatDistance,
   haversineDistance,
 } from '@/src/utils/towerUtils';
@@ -32,21 +33,13 @@ const RADIO_LABEL: Record<CellTower['radio'], string> = {
   GSM: '2G', UMTS: '3G', LTE: '4G LTE', NR: '5G NR',
 };
 
-// ─── Glass header (matches map tab) ──────────────────────────────────────────
-function GlassHeader({ children, paddingTop }: { children: React.ReactNode; paddingTop: number }) {
-  const inner = (
-    <View style={[styles.headerInner, { paddingTop: paddingTop + 10 }]}>
+// ─── White header ─────────────────────────────────────────────────────────────
+function WhiteHeader({ children, paddingTop }: { children: React.ReactNode; paddingTop: number }) {
+  return (
+    <View style={[styles.headerWrap, { paddingTop: paddingTop + 10 }]}>
       {children}
     </View>
   );
-  if (Platform.OS === 'ios') {
-    return (
-      <BlurView intensity={85} tint="systemUltraThinMaterialLight" style={styles.headerBlur}>
-        {inner}
-      </BlurView>
-    );
-  }
-  return <View style={[styles.headerBlur, styles.headerAndroid]}>{inner}</View>;
 }
 
 // ─── Signal bars ──────────────────────────────────────────────────────────────
@@ -69,12 +62,13 @@ function SignalBars({ conf, color }: { conf: 'high' | 'medium' | 'low'; color: s
 }
 
 // ─── Nearest tower hero card ──────────────────────────────────────────────────
-interface RowItem { tower: CellTower; dist: number | null }
+interface RowItem { tower: CellTower; dist: number | null; bearing: number | null }
 
 function NearestTowerCard({ item, onPress }: { item: RowItem; onPress: (t: CellTower) => void }) {
-  const { tower, dist } = item;
+  const { tower, dist, bearing } = item;
   const color = RADIO_COLORS[tower.radio];
   const carrier = getCarrierName(tower.mcc, tower.mnc);
+  const conf = confidenceLevel(tower.samples);
 
   return (
     <TouchableOpacity
@@ -86,24 +80,57 @@ function NearestTowerCard({ item, onPress }: { item: RowItem; onPress: (t: CellT
       <View style={[styles.heroAccent, { backgroundColor: color }]} />
 
       <View style={styles.heroContent}>
-        {/* Top: badge + distance */}
+        {/* Top: badge + distance + bearing */}
         <View style={styles.heroTop}>
           <View style={[styles.badge, { backgroundColor: color }]}>
             <Text style={styles.badgeText}>{RADIO_SHORT[tower.radio]}</Text>
           </View>
-          <Text style={[styles.heroDistance, { color }]}>
-            {dist != null ? formatDistance(dist) : '–'}
-          </Text>
+          <View style={styles.heroDistRow}>
+            {dist != null && (
+              <Text style={[styles.heroDistance, { color }]}>{formatDistance(dist)}</Text>
+            )}
+            {bearing != null && (
+              <Text style={styles.heroBearing}>{formatBearing(bearing)}</Text>
+            )}
+          </View>
         </View>
 
-        {/* Carrier + cell info */}
+        {/* Carrier */}
         <Text style={styles.heroCarrier} numberOfLines={1}>{carrier}</Text>
-        <Text style={styles.heroSub}>
-          MCC {tower.mcc} · MNC {tower.mnc} · Cell {tower.cellid}
-        </Text>
 
+        {/* Detail grid */}
+        <View style={styles.heroGrid}>
+          <HeroCell label="Cell ID" value={String(tower.cellid)} />
+          <HeroCell label="MCC / MNC" value={`${tower.mcc} / ${tower.mnc}`} />
+          <HeroCell label="LAC" value={String(tower.lac)} />
+          <HeroCell label="Coverage" value={`~${tower.range.toLocaleString()} m`} />
+          <HeroCell label="Measurements" value={tower.samples.toLocaleString()} />
+          {tower.averageSignalStrength !== 0 && (
+            <HeroCell label="Avg signal" value={`${tower.averageSignalStrength} dBm`} />
+          )}
+        </View>
+
+        {/* Bottom: confidence + signal bars */}
+        <View style={styles.heroBottom}>
+          <View style={[styles.confPill, { backgroundColor: CONFIDENCE_COLOR[conf] + '18' }]}>
+            <View style={[styles.confDot, { backgroundColor: CONFIDENCE_COLOR[conf] }]} />
+            <Text style={[styles.confLabel, { color: CONFIDENCE_COLOR[conf] }]}>
+              {CONFIDENCE_LABEL[conf]} confidence
+            </Text>
+          </View>
+          <SignalBars conf={conf} color={color} />
+        </View>
       </View>
     </TouchableOpacity>
+  );
+}
+
+function HeroCell({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.heroCellItem}>
+      <Text style={styles.heroCellLabel}>{label}</Text>
+      <Text style={styles.heroCellValue}>{value}</Text>
+    </View>
   );
 }
 
@@ -166,11 +193,12 @@ export default function ListTab() {
 
   const rows = useMemo<RowItem[]>(() => {
     const filtered = towers.filter((t) => mapFilters.has(t.radio));
-    if (!location) return filtered.map((tower) => ({ tower, dist: null }));
+    if (!location) return filtered.map((tower) => ({ tower, dist: null, bearing: null }));
     return filtered
       .map((tower) => ({
         tower,
         dist: haversineDistance(location.latitude, location.longitude, tower.lat, tower.lon),
+        bearing: bearingTo(location.latitude, location.longitude, tower.lat, tower.lon),
       }))
       .sort((a, b) => (a.dist ?? 0) - (b.dist ?? 0));
   }, [towers, mapFilters, location]);
@@ -199,8 +227,8 @@ export default function ListTab() {
 
   return (
     <View style={styles.container}>
-      {/* ── iOS 26-style navigation header ── */}
-      <GlassHeader paddingTop={insets.top}>
+      {/* ── White header ── */}
+      <WhiteHeader paddingTop={insets.top}>
         <View style={styles.titleRow}>
           <Text style={styles.largeTitle}>Towers </Text>
           <Text style={styles.largeCount}>
@@ -235,7 +263,7 @@ export default function ListTab() {
             );
           })}
         </View>
-      </GlassHeader>
+      </WhiteHeader>
 
       {/* ── Content ── */}
       {isLoading ? (
@@ -246,7 +274,7 @@ export default function ListTab() {
         <View style={styles.centered}>
           <Ionicons name="cellular-outline" size={40} color="#d1d5db" />
           <Text style={styles.emptyTitle}>{error ?? 'No towers loaded'}</Text>
-          <Text style={styles.emptyHint}>Open the Map tab and tap "Search this area"</Text>
+          <Text style={styles.emptyHint}>Open the Map tab and pan to an area</Text>
         </View>
       ) : (
         <FlatList
@@ -277,16 +305,23 @@ const styles = StyleSheet.create({
   listContent: { paddingTop: 8 },
 
   // ── Header ──
-  headerBlur: {
+  headerWrap: {
+    backgroundColor: '#ffffff',
     zIndex: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.12)',
-  },
-  headerAndroid: { backgroundColor: 'rgba(242,242,247,0.97)' },
-  headerInner: {
     paddingHorizontal: 20,
     paddingBottom: 12,
     gap: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.12)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+      },
+      android: { elevation: 2 },
+    }),
   },
   titleRow: {
     flexDirection: 'row',
@@ -298,12 +333,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1c1c1e',
     letterSpacing: -0.5,
-  },
-  countBadge: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#9ca3af',
-    marginTop: 4,
   },
   largeCount: {
     fontSize: 36,
@@ -362,18 +391,27 @@ const styles = StyleSheet.create({
   heroContent: {
     flex: 1,
     padding: 18,
-    gap: 6,
+    gap: 8,
   },
   heroTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+  },
+  heroDistRow: {
+    alignItems: 'flex-end',
+    gap: 2,
   },
   heroDistance: {
     fontSize: 28,
     fontWeight: '800',
     letterSpacing: -0.5,
+  },
+  heroBearing: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8e8e93',
+    letterSpacing: 0.3,
   },
   heroCarrier: {
     fontSize: 22,
@@ -381,17 +419,45 @@ const styles = StyleSheet.create({
     color: '#1c1c1e',
     letterSpacing: -0.3,
   },
-  heroSub: {
-    fontSize: 12,
-    color: '#8e8e93',
-    fontVariant: ['tabular-nums'],
-    marginBottom: 6,
+
+  // hero detail grid
+  heroGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 0,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 2,
   },
+  heroCellItem: {
+    width: '50%',
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderColor: '#edf2f7',
+  },
+  heroCellLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  heroCellValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1e293b',
+    fontVariant: ['tabular-nums'],
+  },
+
   heroBottom: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 4,
+    marginTop: 2,
   },
 
   // ── Signal bars ──
