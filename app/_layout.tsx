@@ -56,20 +56,28 @@ export default Sentry.wrap(function RootLayout() {
   // FileSystem marker (cleared on uninstall) to detect fresh installs and
   // reset the onboarding flag.
   useEffect(() => {
-    const INSTALL_MARKER = `${FileSystem.documentDirectory}.installed`;
-    Promise.all([
-      FileSystem.getInfoAsync(INSTALL_MARKER),
-      SecureStore.getItemAsync('hasSeenOnboarding'),
-    ]).then(async ([markerInfo, val]) => {
-      if (!markerInfo.exists) {
-        await SecureStore.deleteItemAsync('hasSeenOnboarding');
-        await FileSystem.writeAsStringAsync(INSTALL_MARKER, '1');
-        setNeedsOnboarding(true);
-      } else {
+    (async () => {
+      try {
+        const INSTALL_MARKER = `${FileSystem.documentDirectory}.installed`;
+        const [markerInfo, val] = await Promise.all([
+          FileSystem.getInfoAsync(INSTALL_MARKER),
+          SecureStore.getItemAsync('hasSeenOnboarding'),
+        ]);
+        if (!markerInfo.exists) {
+          await SecureStore.deleteItemAsync('hasSeenOnboarding');
+          await FileSystem.writeAsStringAsync(INSTALL_MARKER, '1');
+          setNeedsOnboarding(true);
+        } else {
+          setNeedsOnboarding(!val);
+        }
+      } catch {
+        // Fall back gracefully — show onboarding check from SecureStore alone
+        const val = await SecureStore.getItemAsync('hasSeenOnboarding').catch(() => null);
         setNeedsOnboarding(!val);
+      } finally {
+        setOnboardingChecked(true);
       }
-      setOnboardingChecked(true);
-    });
+    })();
   }, []);
 
   // Only hide the splash once BOTH fonts and the onboarding check are ready —
