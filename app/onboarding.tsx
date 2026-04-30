@@ -86,8 +86,9 @@ const PAGES: Page[] = [
   },
   {
     key: 'terrain',
-    type: 'icon',
-    icon: 'trending-up-outline',
+    type: 'image',
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    image: require('../assets/images/onboarding-elevation.jpg'),
     title: "Signal doesn't care\nyou're in a valley.",
     body: 'Our coverage calculation accounts for terrain elevation — so you know if a tower can actually reach you, not just how far away it is.',
   },
