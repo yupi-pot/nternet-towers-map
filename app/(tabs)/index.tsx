@@ -376,7 +376,7 @@ export default function MapTab() {
       isProgrammaticMoveRef.current = false;
       return;
     }
-    if (userHasDraggedRef.current && firstFetchDoneRef.current) {
+    if (!firstFetchDoneRef.current || userHasDraggedRef.current) {
       refreshCurrentRegion();
     }
   }, [mapRegionRef, refreshCurrentRegion]);
@@ -508,29 +508,9 @@ export default function MapTab() {
     return c;
   }, [towers]);
 
-  if (locationLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.centeredText}>Getting location…</Text>
-      </View>
-    );
-  }
-  if (locationError) {
-    return (
-      <View style={styles.centered}>
-        <Text style={[styles.centeredText, { color: '#ef4444' }]}>{locationError}</Text>
-      </View>
-    );
-  }
-  if (!location) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.centeredText}>Waiting for location…</Text>
-      </View>
-    );
-  }
+  const initialRegion = location
+    ? { latitude: location.latitude, longitude: location.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 }
+    : { latitude: 48.8566, longitude: 2.3522, latitudeDelta: 30, longitudeDelta: 30 };
 
   return (
     <MapErrorBoundary onReset={() => setCurrentRegion(null)}>
@@ -538,12 +518,7 @@ export default function MapTab() {
       <MapView
         ref={mapRef}
         style={styles.map}
-        initialRegion={{
-          latitude: location.latitude,
-          longitude: location.longitude,
-          latitudeDelta: 0.015,
-          longitudeDelta: 0.015,
-        }}
+        initialRegion={initialRegion}
         userInterfaceStyle="light"
         onRegionChange={handleRegionChange}
         onRegionChangeComplete={handleRegionChangeComplete}
@@ -696,11 +671,13 @@ export default function MapTab() {
       )}
 
       {/* ── My location ── */}
-      <TouchableOpacity style={styles.locationBtnWrap} onPress={handleMyLocation} activeOpacity={0.75}>
-        <GlassView style={styles.iconBtn}>
-          <Ionicons name="locate" size={19} color="#3b82f6" />
-        </GlassView>
-      </TouchableOpacity>
+      {location && (
+        <TouchableOpacity style={styles.locationBtnWrap} onPress={handleMyLocation} activeOpacity={0.75}>
+          <GlassView style={styles.iconBtn}>
+            <Ionicons name="locate" size={19} color="#3b82f6" />
+          </GlassView>
+        </TouchableOpacity>
+      )}
 
       <TowerDetailModal
         tower={selectedTower}
