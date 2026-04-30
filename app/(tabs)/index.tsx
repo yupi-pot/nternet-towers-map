@@ -376,14 +376,11 @@ export default function MapTab() {
       isProgrammaticMoveRef.current = false;
       return;
     }
-    if (!firstFetchDoneRef.current || userHasDraggedRef.current) {
-      refreshCurrentRegion();
-    }
+    refreshCurrentRegion();
   }, [mapRegionRef, refreshCurrentRegion]);
 
   const handleMyLocation = useCallback(() => {
     if (!location || !mapRef.current) return;
-    isProgrammaticMoveRef.current = true;
     mapRef.current.animateToRegion(
       { latitude: location.latitude, longitude: location.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 },
       500,
@@ -657,24 +654,11 @@ export default function MapTab() {
         </View>
       </SafeAreaView>
 
-      {/* ── Sentry debug ── */}
-      {__DEV__ && (
-        <TouchableOpacity
-          style={styles.sentryDebugBtn}
-          onPress={() => { Sentry.captureException(new Error('Test error from cellr')); }}
-          activeOpacity={0.75}
-        >
-          <GlassView style={styles.iconBtn}>
-            <Ionicons name="bug" size={17} color="#ef4444" />
-          </GlassView>
-        </TouchableOpacity>
-      )}
-
       {/* ── My location ── */}
       {location && (
         <TouchableOpacity style={styles.locationBtnWrap} onPress={handleMyLocation} activeOpacity={0.75}>
-          <GlassView style={styles.iconBtn}>
-            <Ionicons name="locate" size={19} color="#3b82f6" />
+          <GlassView style={styles.locationBtn}>
+            <Ionicons name="navigate" size={22} color="#3b82f6" />
           </GlassView>
         </TouchableOpacity>
       )}
@@ -754,11 +738,11 @@ const styles = StyleSheet.create({
   pillCount: { fontSize: 11, fontWeight: '500' },
 
   iconBtn: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
+  locationBtn: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
 
   rippleRing: {
     width: RIPPLE_BASE, height: RIPPLE_BASE, borderRadius: RIPPLE_BASE / 2, borderWidth: 1.5,
   },
 
   locationBtnWrap: { position: 'absolute', bottom: 108, right: 14 },
-  sentryDebugBtn:  { position: 'absolute', bottom: 160, right: 14 },
 });

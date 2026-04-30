@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import * as Sentry from '@sentry/react-native';
 import { useFonts } from 'expo-font';
 import { router, Stack, useNavigationContainerRef, useRootNavigationState } from 'expo-router';
+import * as FileSystem from 'expo-file-system';
 import * as SecureStore from 'expo-secure-store';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
@@ -50,10 +51,23 @@ export default Sentry.wrap(function RootLayout() {
     if (fontError) throw fontError;
   }, [fontError]);
 
-  // Check onboarding state independently of font loading
+  // Check onboarding state independently of font loading.
+  // SecureStore uses iOS Keychain which survives reinstalls, so we use a
+  // FileSystem marker (cleared on uninstall) to detect fresh installs and
+  // reset the onboarding flag.
   useEffect(() => {
-    SecureStore.getItemAsync('hasSeenOnboarding').then((val) => {
-      setNeedsOnboarding(!val);
+    const INSTALL_MARKER = `${FileSystem.documentDirectory}.installed`;
+    Promise.all([
+      FileSystem.getInfoAsync(INSTALL_MARKER),
+      SecureStore.getItemAsync('hasSeenOnboarding'),
+    ]).then(async ([markerInfo, val]) => {
+      if (!markerInfo.exists) {
+        await SecureStore.deleteItemAsync('hasSeenOnboarding');
+        await FileSystem.writeAsStringAsync(INSTALL_MARKER, '1');
+        setNeedsOnboarding(true);
+      } else {
+        setNeedsOnboarding(!val);
+      }
       setOnboardingChecked(true);
     });
   }, []);
