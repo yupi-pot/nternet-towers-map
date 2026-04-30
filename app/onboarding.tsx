@@ -137,7 +137,7 @@ function VideoSlide({ isActive, title }: { isActive: boolean; title: string }) {
       />
 
       {/* Centered text block in the lower portion */}
-      <View style={[styles.videoContent, { paddingBottom: insets.bottom + 116 }]}>
+      <View style={[styles.videoContent, { paddingBottom: 24 }]}>
         {/* Database badge */}
         <View style={styles.videoBadge}>
           <View style={styles.videoBadgeDot} />
@@ -326,7 +326,7 @@ export default function OnboardingScreen() {
       )}
 
       {/* Bottom bar — always rendered so FlatList height never shifts */}
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + 12 }]}>
+      <View style={[styles.bottom, { paddingBottom: insets.bottom + 12, backgroundColor: isVideoSlide ? 'transparent' : BG }]}>
         <Animated.View style={btnAnimStyle}>
           {isVideoSlide ? (
             <TouchableOpacity style={styles.videoNextBtn} onPress={handleNext} activeOpacity={0.85}>
@@ -361,7 +361,7 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
+  container: { flex: 1, backgroundColor: '#000' },
 
   // ── Video slide ──
   videoSlide: {
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.60)',
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 40,
+    marginBottom: 0,
   },
   videoNextBtn: {
     paddingVertical: 18,
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   videoNextText: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111827',
+    color: '#ffffff',
     letterSpacing: 0.1,
   },
 
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
   },
 
   // ── Icon slide ──
-  page: { flex: 1 },
+  page: { flex: 1, backgroundColor: BG },
   iconArea: {
     flex: 1,
     alignItems: 'center',
@@ -490,7 +490,6 @@ const styles = StyleSheet.create({
   bottom: {
     paddingHorizontal: 24,
     paddingTop: 12,
-    backgroundColor: BG,
   },
   dot: { height: 6, borderRadius: 3 },
   dotActive: { width: 20, backgroundColor: ACCENT },
