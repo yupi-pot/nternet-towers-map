@@ -235,6 +235,15 @@ export default function OnboardingScreen() {
   const isLast = currentIndex === PAGES.length - 1;
   const isVideoSlide = currentIndex === 0;
 
+  // Fade button content out → in whenever the slide changes
+  const btnOpacity = useSharedValue(1);
+  useEffect(() => {
+    btnOpacity.value = withTiming(0, { duration: 100 }, (done) => {
+      if (done) btnOpacity.value = withTiming(1, { duration: 200 });
+    });
+  }, [currentIndex, btnOpacity]);
+  const btnAnimStyle = useAnimatedStyle(() => ({ opacity: btnOpacity.value }));
+
   const finish = useCallback(async () => {
     await SecureStore.setItemAsync('hasSeenOnboarding', 'true');
     router.replace('/(tabs)' as never);
@@ -312,21 +321,14 @@ export default function OnboardingScreen() {
         </View>
       )}
 
-      {/* Bottom controls — hidden on video slide (tap to advance) */}
-      {isVideoSlide ? (
-        <TouchableOpacity
-          style={[styles.videoTapArea, { bottom: insets.bottom + 28, left: 24, right: 24 }]}
-          onPress={handleNext}
-          activeOpacity={0.85}
-        >
-          <View style={styles.videoNextBtn}>
-            <Text style={styles.videoNextText}>Get Started →</Text>
-          </View>
-        </TouchableOpacity>
-      ) : (
-        <View style={[styles.bottom, { paddingBottom: insets.bottom + 12 }]}>
-          {/* Full-width button */}
-          {isLast ? (
+      {/* Bottom bar — always rendered so FlatList height never shifts */}
+      <View style={[styles.bottom, { paddingBottom: insets.bottom + 12 }]}>
+        <Animated.View style={btnAnimStyle}>
+          {isVideoSlide ? (
+            <TouchableOpacity style={styles.videoNextBtn} onPress={handleNext} activeOpacity={0.85}>
+              <Text style={styles.videoNextText}>Get Started →</Text>
+            </TouchableOpacity>
+          ) : isLast ? (
             locationGranted ? (
               <TouchableOpacity style={styles.nextBtn} onPress={finish} activeOpacity={0.85}>
                 <Text style={styles.nextText}>Done ✓</Text>
@@ -348,8 +350,8 @@ export default function OnboardingScreen() {
               <Text style={styles.nextText}>Next →</Text>
             </TouchableOpacity>
           )}
-        </View>
-      )}
+        </Animated.View>
+      </View>
     </View>
   );
 }
@@ -359,7 +361,7 @@ const styles = StyleSheet.create({
 
   // ── Video slide ──
   videoSlide: {
-    height,
+    flex: 1,
     backgroundColor: '#000',
   },
   videoContent: {
@@ -407,9 +409,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 40,
-  },
-  videoTapArea: {
-    position: 'absolute',
   },
   videoNextBtn: {
     backgroundColor: '#ffffff',
