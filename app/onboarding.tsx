@@ -412,8 +412,6 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   videoNextBtn: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
     paddingVertical: 18,
     alignItems: 'center',
   },
