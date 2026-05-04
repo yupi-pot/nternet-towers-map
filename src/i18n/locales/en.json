@@ -59,7 +59,7 @@
     "thanksTitle": "Thanks!",
     "thanksBody": "Your report helps improve tower accuracy for everyone.",
     "coverageRemaining": "Elevation-aware coverage · {{count}} left",
-    "coverageLocked": "Get Premium for elevation-aware coverage",
+    "coverageLocked": "Elevation-aware coverage",
     "getPremium": "Get Premium →"
   },
   "settings": {
