@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LanguagePickerModal from '@/src/components/LanguagePickerModal';
 import { presentPaywall } from '@/src/components/PaywallModal';
 import { usePremium } from '@/src/context/PremiumContext';
+import { tapLight, tapMedium, tapSuccess } from '@/src/utils/haptics';
 import {
   getStoredLanguage,
   LanguageCode,
@@ -95,6 +96,7 @@ export default function SettingsScreen() {
   const copyUserId = async () => {
     if (!userId) return;
     await Clipboard.setStringAsync(userId);
+    tapSuccess();
     setCopied(true);
     setTimeout(() => setCopied(false), 1400);
   };
@@ -119,6 +121,7 @@ export default function SettingsScreen() {
     : null;
 
   const openManageSubscription = () => {
+    tapLight();
     const url =
       Platform.OS === 'ios'
         ? 'https://apps.apple.com/account/subscriptions'
@@ -135,7 +138,7 @@ export default function SettingsScreen() {
         <Text style={styles.largeTitle}>{t('settings.title')}</Text>
         <View style={{ flex: 1 }} />
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => { tapLight(); router.back(); }}
           style={styles.headerClose}
           hitSlop={10}
           activeOpacity={0.6}
@@ -153,7 +156,7 @@ export default function SettingsScreen() {
         {!isPremium && (
           <TouchableOpacity
             style={styles.premiumCta}
-            onPress={() => void presentPaywall()}
+            onPress={() => { tapMedium(); void presentPaywall(); }}
             activeOpacity={0.85}
           >
             <Ionicons name="sparkles" size={20} color="#fff" />
@@ -264,7 +267,7 @@ function Row({
   return (
     <TouchableOpacity
       style={styles.row}
-      onPress={onPress}
+      onPress={onPress ? () => { tapLight(); onPress(); } : undefined}
       activeOpacity={0.55}
       disabled={!onPress}
     >

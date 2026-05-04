@@ -22,6 +22,7 @@ import { useTowersContext } from '@/src/context/TowersContext';
 import { isPremiumOnlyTower } from '@/src/utils/premiumTowers';
 import { scheduleReviewAfterFiltersUsed } from '@/src/utils/rateApp';
 import { getCarrierName } from '@/src/utils/carrierNames';
+import { tapLight, tapMedium, tapSelection } from '@/src/utils/haptics';
 import {
   bearingTo,
   CONFIDENCE_COLOR,
@@ -203,9 +204,11 @@ export default function ListTab() {
 
   const toggleFilter = (radio: CellTower['radio']) => {
     if (!isPremium) {
+      tapMedium();
       void presentPaywall();
       return;
     }
+    tapSelection();
     void scheduleReviewAfterFiltersUsed();
     setActiveFilters((prev) => {
       const next = new Set(prev);
@@ -242,7 +245,7 @@ export default function ListTab() {
   const listHeader = nearest ? (
     <View>
       <Text style={styles.sectionLabel}>{t('list.nearestTower')}</Text>
-      <NearestTowerCard item={nearest} onPress={(tower) => setSelectedTower(tower)} />
+      <NearestTowerCard item={nearest} onPress={(tower) => { tapLight(); setSelectedTower(tower); }} />
       {listRows.length > 0 && (
         <Text style={[styles.sectionLabel, { marginTop: 24 }]}>
           {t('list.nearby', { count: listRows.length })}
@@ -262,7 +265,7 @@ export default function ListTab() {
           </Text>
           <View style={{ flex: 1 }} />
           <TouchableOpacity
-            onPress={() => router.push('/settings' as never)}
+            onPress={() => { tapLight(); router.push('/settings' as never); }}
             hitSlop={10}
             activeOpacity={0.6}
           >
@@ -328,7 +331,7 @@ export default function ListTab() {
           keyExtractor={(item) =>
             `${item.tower.mcc}-${item.tower.mnc}-${item.tower.lac}-${item.tower.cellid}`
           }
-          renderItem={({ item }) => <TowerRow item={item} onPress={(tower) => setSelectedTower(tower)} />}
+          renderItem={({ item }) => <TowerRow item={item} onPress={(tower) => { tapLight(); setSelectedTower(tower); }} />}
           ItemSeparatorComponent={Separator}
           ListHeaderComponent={listHeader}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 80 }]}
@@ -341,7 +344,7 @@ export default function ListTab() {
           style={[styles.hiddenBannerWrap, { bottom: insets.bottom + 16 }]}
           pointerEvents="box-none"
         >
-          <TouchableOpacity onPress={() => void presentPaywall()} activeOpacity={0.75}>
+          <TouchableOpacity onPress={() => { tapMedium(); void presentPaywall(); }} activeOpacity={0.75}>
             {Platform.OS === 'ios' && isLiquidGlassAvailable() ? (
               <GlassView style={styles.hiddenBanner}>
                 <Text style={styles.hiddenBannerText}>

@@ -40,6 +40,7 @@ import {
 import { useCompass } from '@/src/hooks/useCompass';
 import { presentPaywall } from '@/src/components/PaywallModal';
 import { usePremium } from '@/src/context/PremiumContext';
+import { tapLight, tapMedium, tapSuccess } from '@/src/utils/haptics';
 import { CellTower, RADIO_COLORS, RADIO_LABELS } from '@/src/types';
 
 interface Props {
@@ -89,6 +90,7 @@ export default function TowerDetailModal({
   }, [onClose]);
 
   const openPaywall = useCallback(() => {
+    tapMedium();
     cardTranslateY.value = withTiming(
       600,
       { duration: 200, easing: Easing.in(Easing.quad) },
@@ -134,10 +136,13 @@ export default function TowerDetailModal({
       ? (towerBearing - deviceHeading + 360) % 360
       : null;
 
-  const handleCopyCoords = () =>
-    Clipboard.setStringAsync(`${tower.lat.toFixed(6)}, ${tower.lon.toFixed(6)}`);
+  const handleCopyCoords = () => {
+    tapSuccess();
+    return Clipboard.setStringAsync(`${tower.lat.toFixed(6)}, ${tower.lon.toFixed(6)}`);
+  };
 
   const handleExport = async () => {
+    tapMedium();
     const data = {
       cellid: tower.cellid,
       carrier,
@@ -161,6 +166,7 @@ export default function TowerDetailModal({
 
   const handleFlag = () => {
     if (flagged) return;
+    tapSuccess();
     setFlagged(true);
     onFlagInaccurate?.(tower);
     Alert.alert(t('tower.thanksTitle'), t('tower.thanksBody'));
@@ -191,11 +197,14 @@ export default function TowerDetailModal({
 
             <TouchableOpacity
               style={[styles.confBadge, { borderColor: CONFIDENCE_COLOR[conf] }]}
-              onPress={() => Alert.alert(
-                t('tower.confidenceTitle'),
-                t('tower.confidenceBody'),
-                [{ text: t('common.ok') }],
-              )}
+              onPress={() => {
+                tapLight();
+                Alert.alert(
+                  t('tower.confidenceTitle'),
+                  t('tower.confidenceBody'),
+                  [{ text: t('common.ok') }],
+                );
+              }}
               activeOpacity={0.7}
             >
               <View style={[styles.confDot, { backgroundColor: CONFIDENCE_COLOR[conf] }]} />
@@ -205,7 +214,7 @@ export default function TowerDetailModal({
               <Text style={[styles.confInfo, { color: CONFIDENCE_COLOR[conf] }]}>ⓘ</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={closeCard} style={styles.closeBtn}>
+            <TouchableOpacity onPress={() => { tapLight(); closeCard(); }} style={styles.closeBtn}>
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
           </View>

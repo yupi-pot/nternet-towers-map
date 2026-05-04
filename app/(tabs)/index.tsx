@@ -41,6 +41,7 @@ import { useCoverageQuota } from '@/src/hooks/useCoverageQuota';
 import { CellTower, RADIO_COLORS } from '@/src/types';
 import { isPremiumOnlyTower } from '@/src/utils/premiumTowers';
 import { scheduleReviewAfterFiltersUsed } from '@/src/utils/rateApp';
+import { tapLight, tapMedium, tapSelection } from '@/src/utils/haptics';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -364,17 +365,21 @@ export default function MapTab() {
 
   const handleAllChip = useCallback(() => {
     if (!isPremium) {
+      tapMedium();
       void presentPaywall();
       return;
     }
+    tapSelection();
     applyFilters(new Set(ALL_RADIOS));
   }, [applyFilters, isPremium]);
 
   const toggleFilter = useCallback((radio: CellTower['radio']) => {
     if (!isPremium) {
+      tapMedium();
       void presentPaywall();
       return;
     }
+    tapSelection();
     void scheduleReviewAfterFiltersUsed();
     setActiveFilters((prev) => {
       const allActive = prev.size === ALL_RADIOS.length;
@@ -425,6 +430,7 @@ export default function MapTab() {
 
   const handleMyLocation = useCallback(() => {
     if (!location || !mapRef.current) return;
+    tapLight();
     mapRef.current.animateToRegion(
       { latitude: location.latitude, longitude: location.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 },
       500,
@@ -433,6 +439,7 @@ export default function MapTab() {
 
   // Open the sheet for a tower and center it in the visible map area above the sheet
   const handleTowerPress = useCallback((tower: CellTower) => {
+    tapLight();
     markerJustPressedRef.current = true; // block MapView.onPress for this tap
     setSelectedTower(tower);
     const key = `${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`;
@@ -607,6 +614,7 @@ export default function MapTab() {
                 minimized={isCapped || coverageTower !== null}
                 tracksViewChanges={trackingMarkers}
                 onPress={() => {
+                  tapLight();
                   setRippleItems([]);
                   const expansionZoom = scRef.current.getClusterExpansionZoom(cluster_id);
                   const delta = 360 / Math.pow(2, expansionZoom);
@@ -671,7 +679,7 @@ export default function MapTab() {
               <Text style={styles.bigTitle}> {t('map.foundSuffix')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => router.push('/settings' as never)}
+              onPress={() => { tapLight(); router.push('/settings' as never); }}
               hitSlop={10}
               activeOpacity={0.6}
             >
@@ -732,7 +740,7 @@ export default function MapTab() {
       {/* ── Hidden-towers banner (centered, glass) ── */}
       {hiddenCount > 0 && (
         <View style={styles.hiddenBannerWrap} pointerEvents="box-none">
-          <TouchableOpacity onPress={() => void presentPaywall()} activeOpacity={0.75}>
+          <TouchableOpacity onPress={() => { tapMedium(); void presentPaywall(); }} activeOpacity={0.75}>
             <GlassView style={styles.hiddenBanner}>
               <Text style={styles.hiddenBannerText}>
                 {t('map.hiddenBanner', { count: hiddenCount })}
