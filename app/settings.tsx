@@ -112,16 +112,14 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>About</Text>
         <View style={styles.group}>
           <Row
-            icon="lock-closed"
-            iconColor="#3b82f6"
+            icon="lock-closed-outline"
             label="Privacy Policy"
             onPress={() => openURL(PRIVACY_URL)}
             showChevron
           />
           <Separator />
           <Row
-            icon="document-text"
-            iconColor="#8b5cf6"
+            icon="document-text-outline"
             label="Terms of Use"
             onPress={() => openURL(TERMS_URL)}
             showChevron
@@ -132,8 +130,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>Preferences</Text>
         <View style={styles.group}>
           <Row
-            icon="globe"
-            iconColor="#10b981"
+            icon="globe-outline"
             label="Language"
             value="System"
             onPress={openLanguageSettings}
@@ -145,8 +142,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>Support</Text>
         <View style={styles.group}>
           <Row
-            icon="mail"
-            iconColor="#f97316"
+            icon="mail-outline"
             label="Contact Us"
             onPress={openSupportEmail}
             showChevron
@@ -172,14 +168,12 @@ export default function SettingsScreen() {
 // ─── Row ──────────────────────────────────────────────────────────────────────
 function Row({
   icon,
-  iconColor,
   label,
   value,
   onPress,
   showChevron,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
-  iconColor: string;
   label: string;
   value?: string;
   onPress?: () => void;
@@ -192,9 +186,7 @@ function Row({
       activeOpacity={0.55}
       disabled={!onPress}
     >
-      <View style={[styles.rowIcon, { backgroundColor: iconColor }]}>
-        <Ionicons name={icon} size={17} color="#fff" />
-      </View>
+      <Ionicons name={icon} size={22} color="#8e8e93" style={styles.rowIcon} />
       <Text style={styles.rowLabel}>{label}</Text>
       <View style={styles.rowRight}>
         {value && <Text style={styles.rowValue}>{value}</Text>}
@@ -264,10 +256,7 @@ const styles = StyleSheet.create({
   },
   rowIcon: {
     width: 28,
-    height: 28,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
+    textAlign: 'center',
   },
   rowLabel: {
     flex: 1,
@@ -290,6 +279,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e5e5ea',
     marginLeft: 54,
   },
+  /* keep separator-indent in sync with row icon + gap (14 + 28 + 12 = 54) */
 
   footer: {
     alignItems: 'center',
