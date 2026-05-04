@@ -699,7 +699,6 @@ export default function MapTab() {
               activeOpacity={0.75}
             >
               <Text style={[styles.chipText, !isAllActive && styles.chipTextInactive]}>{t('map.filterAll')}</Text>
-              {!isPremium && <Text style={styles.chipLock}> 🔒</Text>}
             </TouchableOpacity>
             {ALL_RADIOS.map((radio) => {
               const active = !isAllActive && activeFilters.has(radio);
@@ -723,26 +722,26 @@ export default function MapTab() {
                   <Text style={[styles.pillCount, { color: active ? color + '99' : '#9ca3af' }]}>
                     {radioCounts[radio]}
                   </Text>
-                  {!isPremium && <Text style={styles.pillLock}>🔒</Text>}
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
+        </View>
+      </SafeAreaView>
 
-          {hiddenCount > 0 && (
-            <TouchableOpacity
-              style={styles.hiddenBanner}
-              onPress={() => void presentPaywall()}
-              activeOpacity={0.85}
-            >
+      {/* ── Hidden-towers banner (centered, glass) ── */}
+      {hiddenCount > 0 && (
+        <View style={styles.hiddenBannerWrap} pointerEvents="box-none">
+          <TouchableOpacity onPress={() => void presentPaywall()} activeOpacity={0.75}>
+            <GlassView style={styles.hiddenBanner}>
               <Text style={styles.hiddenBannerText}>
                 {t('map.hiddenBanner', { count: hiddenCount })}
               </Text>
               <Text style={styles.hiddenBannerCta}>{t('map.hiddenBannerCta')}</Text>
-            </TouchableOpacity>
-          )}
+            </GlassView>
+          </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      )}
 
       {/* ── My location ── */}
       {location && (
@@ -847,23 +846,25 @@ const styles = StyleSheet.create({
   pillDot: { width: 6, height: 6, borderRadius: 3 },
   pillText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.1 },
   pillCount: { fontSize: 11, fontWeight: '500' },
-  pillLock: { fontSize: 10, marginLeft: 2, opacity: 0.7 },
-  chipLock: { fontSize: 10, color: '#fff', opacity: 0.85 },
 
+  hiddenBannerWrap: {
+    position: 'absolute',
+    bottom: 116,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 5,
+  },
   hiddenBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(245, 158, 11, 0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.45)',
-    borderRadius: 12,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    marginTop: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 100,
+    gap: 8,
   },
-  hiddenBannerText: { fontSize: 13, fontWeight: '600', color: '#92400e', flex: 1 },
-  hiddenBannerCta: { fontSize: 13, fontWeight: '700', color: '#b45309', marginLeft: 10 },
+  hiddenBannerText: { fontSize: 13, fontWeight: '600', color: '#1c1c1e' },
+  hiddenBannerCta: { fontSize: 13, fontWeight: '700', color: '#3b82f6' },
 
   iconBtn: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   locationBtn: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },

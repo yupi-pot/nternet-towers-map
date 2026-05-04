@@ -304,7 +304,6 @@ export default function ListTab() {
                 <Text style={[styles.pillCount, { color: active ? color + '99' : '#9ca3af' }]}>
                   {radioCounts[radio]}
                 </Text>
-                {!isPremium && <Text style={styles.pillLock}>🔒</Text>}
               </TouchableOpacity>
             );
           })}
@@ -416,7 +415,6 @@ const styles = StyleSheet.create({
   pillDot: { width: 6, height: 6, borderRadius: 3 },
   pillText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.1 },
   pillCount: { fontSize: 11, fontWeight: '500' },
-  pillLock: { fontSize: 10, marginLeft: 2, opacity: 0.7 },
 
   // ── Section labels ──
   sectionLabel: {

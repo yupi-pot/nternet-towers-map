@@ -18,6 +18,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import LanguagePickerModal from '@/src/components/LanguagePickerModal';
+import { presentPaywall } from '@/src/components/PaywallModal';
+import { usePremium } from '@/src/context/PremiumContext';
 import {
   getStoredLanguage,
   LanguageCode,
@@ -55,6 +57,7 @@ async function getOrCreateUserId(): Promise<string> {
 export default function SettingsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { isPremium } = usePremium();
   const insets = useSafeAreaInsets();
   const [userId, setUserId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -130,6 +133,18 @@ export default function SettingsScreen() {
           { paddingBottom: insets.bottom + 32 },
         ]}
       >
+        {!isPremium && (
+          <TouchableOpacity
+            style={styles.premiumCta}
+            onPress={() => void presentPaywall()}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="sparkles" size={20} color="#fff" />
+            <Text style={styles.premiumCtaText}>{t('settings.getPremium')}</Text>
+            <Ionicons name="chevron-forward" size={18} color="#fff" />
+          </TouchableOpacity>
+        )}
+
         {/* About */}
         <Text style={styles.sectionLabel}>{t('settings.sectionAbout')}</Text>
         <View style={styles.group}>
@@ -259,6 +274,31 @@ const styles = StyleSheet.create({
 
   scroll: {
     paddingTop: 8,
+  },
+
+  premiumCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3b82f6',
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  premiumCtaText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: -0.2,
   },
 
   sectionLabel: {
