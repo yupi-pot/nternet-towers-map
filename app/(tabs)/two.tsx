@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useRef, useState } from 'react';
 import {
@@ -242,11 +243,22 @@ export default function ListTab() {
           <View style={{ flex: 1 }} />
           <TouchableOpacity
             onPress={() => router.push('/settings' as never)}
-            style={styles.settingsBtn}
             hitSlop={10}
             activeOpacity={0.6}
           >
-            <Ionicons name="settings-outline" size={22} color="#1c1c1e" />
+            {Platform.OS === 'ios' && isLiquidGlassAvailable() ? (
+              <GlassView
+                glassEffectStyle="regular"
+                isInteractive
+                style={styles.settingsBtnGlass}
+              >
+                <Ionicons name="settings-outline" size={22} color="#1c1c1e" />
+              </GlassView>
+            ) : (
+              <View style={[styles.settingsBtnGlass, styles.settingsBtnFallback]}>
+                <Ionicons name="settings-outline" size={22} color="#1c1c1e" />
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -342,12 +354,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 10,
   },
-  settingsBtn: {
-    width: 36,
-    height: 36,
+  settingsBtnGlass: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     marginBottom: 2,
+  },
+  settingsBtnFallback: {
+    backgroundColor: 'rgba(118,118,128,0.12)',
   },
   largeTitle: {
     fontSize: 36,

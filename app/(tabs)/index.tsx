@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView as NativeGlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -226,7 +227,21 @@ const SingleRipple = React.memo(function SingleRipple({
   );
 });
 
+// Real liquid-glass on iOS 26+; falls back to translucent fill elsewhere.
+const HAS_LIQUID_GLASS = Platform.OS === 'ios' && isLiquidGlassAvailable();
+
 function GlassView({ style, children }: { style?: object; children: React.ReactNode }) {
+  if (HAS_LIQUID_GLASS) {
+    return (
+      <NativeGlassView
+        glassEffectStyle="regular"
+        isInteractive
+        style={[styles.glass, style]}
+      >
+        {children}
+      </NativeGlassView>
+    );
+  }
   return (
     <View style={[styles.glass, Platform.OS === 'android' ? styles.glassAndroid : styles.glassIOS, style]}>
       {children}
@@ -655,6 +670,17 @@ export default function MapTab() {
         </View>
       </SafeAreaView>
 
+      {/* ── Settings ── */}
+      <TouchableOpacity
+        style={styles.settingsBtnWrap}
+        onPress={() => router.push('/settings' as never)}
+        activeOpacity={0.75}
+      >
+        <GlassView style={styles.locationBtn}>
+          <Ionicons name="settings-outline" size={22} color="#1c1c1e" />
+        </GlassView>
+      </TouchableOpacity>
+
       {/* ── My location ── */}
       {location && (
         <TouchableOpacity style={styles.locationBtnWrap} onPress={handleMyLocation} activeOpacity={0.75}>
@@ -746,4 +772,5 @@ const styles = StyleSheet.create({
   },
 
   locationBtnWrap: { position: 'absolute', bottom: 108, right: 14 },
+  settingsBtnWrap: { position: 'absolute', bottom: 170, right: 14 },
 });
