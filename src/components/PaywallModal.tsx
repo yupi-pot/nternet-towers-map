@@ -2,6 +2,7 @@ import { Linking } from 'react-native';
 import { adapty, createPaywallView } from 'react-native-adapty';
 
 import { PAYWALL_PLACEMENT } from '@/src/config/adapty';
+import { logSubscriptionPurchase } from '@/src/config/appsflyer';
 
 interface PresentOptions {
   /** Called after a successful purchase. Profile is up to date when this fires. */
@@ -39,8 +40,12 @@ export async function presentPaywall(options: PresentOptions = {}): Promise<void
     onUrlPress(url) {
       Linking.openURL(url);
     },
-    onPurchaseCompleted() {
-      options.onPurchase?.();
+    onPurchaseCompleted(purchaseResult, product) {
+      if (purchaseResult.type === 'success') {
+        logSubscriptionPurchase(product);
+        options.onPurchase?.();
+      }
+      return purchaseResult.type !== 'user_cancelled';
     },
     onRestoreCompleted() {
       options.onRestore?.();
