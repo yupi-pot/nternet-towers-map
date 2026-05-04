@@ -112,6 +112,14 @@ function RootLayoutNav({ needsOnboarding }: { needsOnboarding: boolean }) {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen
+            name="settings"
+            options={{
+              headerShown: false,
+              presentation: 'modal',
+              gestureEnabled: true,
+            }}
+          />
           <Stack.Screen name="+not-found" />
         </Stack>
       </ThemeProvider>

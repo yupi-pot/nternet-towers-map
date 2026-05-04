@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -177,6 +178,7 @@ const Separator = () => <View style={styles.separator} />;
 export default function ListTab() {
   const { towers, isLoading, error, location } = useTowersContext();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -237,6 +239,15 @@ export default function ListTab() {
           <Text style={styles.largeCount}>
             {isLoading ? '…' : totalFiltered}
           </Text>
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity
+            onPress={() => router.push('/settings' as never)}
+            style={styles.settingsBtn}
+            hitSlop={10}
+            activeOpacity={0.6}
+          >
+            <Ionicons name="settings-outline" size={22} color="#1c1c1e" />
+          </TouchableOpacity>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
@@ -330,6 +341,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 10,
+  },
+  settingsBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
   },
   largeTitle: {
     fontSize: 36,
