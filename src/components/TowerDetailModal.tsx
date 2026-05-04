@@ -25,6 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 
 import { getCarrierName } from '@/src/utils/carrierNames';
 import {
@@ -80,20 +81,23 @@ export default function TowerDetailModal({
     );
   }, [onClose, cardTranslateY]);
 
+  // Closes the sheet, then presents the native paywall after a frame.
+  // Why: iOS won't present Adapty's native modal over an active RN <Modal>.
+  const closeAndPresentPaywall = useCallback(() => {
+    onClose();
+    setTimeout(() => { void presentPaywall(); }, 50);
+  }, [onClose]);
+
   const openPaywall = useCallback(() => {
-    // Close the bottom sheet first — iOS won't let Adapty present a native
-    // modal on top of an active React Native <Modal>. Wait one frame after
-    // unmounting before triggering the native presentation.
     cardTranslateY.value = withTiming(
       600,
       { duration: 200, easing: Easing.in(Easing.quad) },
       (finished) => {
         if (!finished) return;
-        runOnJS(onClose)();
-        runOnJS(setTimeout)(() => { void presentPaywall(); }, 50);
+        runOnJS(closeAndPresentPaywall)();
       },
     );
-  }, [onClose, cardTranslateY]);
+  }, [closeAndPresentPaywall, cardTranslateY]);
 
   // Swipe-to-close: card follows finger live, closes on fast/far swipe
   const swipeGesture = Gesture.Pan()
@@ -239,9 +243,10 @@ export default function TowerDetailModal({
           )}
           {!isPremium && coverageNotice === 'locked' && (
             <TouchableOpacity style={styles.coverageNoticeLocked} onPress={openPaywall} activeOpacity={0.85}>
-              <Text style={styles.coverageNoticeLockedText}>
-                🔒 {t('tower.coverageLocked')}
-              </Text>
+              <View style={styles.coverageNoticeLockedTextWrap}>
+                <Ionicons name="lock-closed" size={14} color="#92400e" />
+                <Text style={styles.coverageNoticeLockedText}>{t('tower.coverageLocked')}</Text>
+              </View>
               <Text style={styles.coverageNoticeCta}>{t('tower.getPremium')}</Text>
             </TouchableOpacity>
           )}
@@ -315,9 +320,12 @@ export default function TowerDetailModal({
               style={[styles.actionBtn, styles.actionBtnPrimary]}
               onPress={isPremium ? handleExport : openPaywall}
             >
-              <Text style={styles.actionBtnTextPrimary}>
-                {isPremium ? t('tower.export') : `🔒 ${t('tower.export')}`}
-              </Text>
+              <View style={styles.actionBtnContent}>
+                {!isPremium && (
+                  <Ionicons name="lock-closed" size={14} color="#fff" style={styles.actionBtnIcon} />
+                )}
+                <Text style={styles.actionBtnTextPrimary}>{t('tower.export')}</Text>
+              </View>
             </TouchableOpacity>
           </View>
           </Animated.View>
@@ -351,7 +359,7 @@ function LockedInfoRow({
         <Text style={styles.infoLabel}>{label}</Text>
         <View style={styles.infoRight}>
           <Text style={styles.infoValueLocked}>••• •••</Text>
-          <Text style={styles.infoLock}>🔒</Text>
+          <Ionicons name="lock-closed" size={12} color="#94a3b8" style={styles.infoLock} />
         </View>
       </View>
     </TouchableOpacity>
@@ -432,7 +440,7 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 14, color: '#64748b' },
   infoValue: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
   infoValueLocked: { fontSize: 14, fontWeight: '700', color: '#cbd5e1', letterSpacing: 2 },
-  infoLock: { fontSize: 12, opacity: 0.55 },
+  infoLock: { opacity: 0.7 },
   infoAction: { fontSize: 12, color: '#3b82f6', fontWeight: '600' },
 
   coverageNoticeRemain: {
@@ -446,7 +454,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef3c7', borderRadius: 12,
     paddingVertical: 10, paddingHorizontal: 14, marginBottom: 12,
   },
-  coverageNoticeLockedText: { fontSize: 13, fontWeight: '600', color: '#92400e', flex: 1 },
+  coverageNoticeLockedTextWrap: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+  coverageNoticeLockedText: { fontSize: 13, fontWeight: '600', color: '#92400e' },
   coverageNoticeCta: { fontSize: 13, fontWeight: '700', color: '#3b82f6', marginLeft: 10 },
 
   actions: { flexDirection: 'row', gap: 10 },
@@ -459,4 +468,6 @@ const styles = StyleSheet.create({
   actionBtnText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
   actionBtnTextDisabled: { color: '#cbd5e1' },
   actionBtnTextPrimary: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  actionBtnContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  actionBtnIcon: { marginRight: 6 },
 });
