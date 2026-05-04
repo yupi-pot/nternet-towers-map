@@ -849,10 +849,12 @@ const styles = StyleSheet.create({
 
   hiddenBannerWrap: {
     position: 'absolute',
-    bottom: 116,
+    bottom: 108,
     left: 0,
     right: 0,
+    height: 52,
     alignItems: 'center',
+    justifyContent: 'center',
     zIndex: 5,
   },
   hiddenBanner: {

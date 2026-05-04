@@ -63,8 +63,6 @@ export default function TowerDetailModal({
   const deviceHeading = useCompass();
   const [flagged, setFlagged] = useState(false);
 
-  const openPaywall = useCallback(() => { void presentPaywall(); }, []);
-
   const cardTranslateY = useSharedValue(500);
 
   useEffect(() => {
@@ -79,6 +77,21 @@ export default function TowerDetailModal({
       600,
       { duration: 250, easing: Easing.in(Easing.quad) },
       (finished) => { if (finished) runOnJS(onClose)(); },
+    );
+  }, [onClose, cardTranslateY]);
+
+  const openPaywall = useCallback(() => {
+    // Close the bottom sheet first — iOS won't let Adapty present a native
+    // modal on top of an active React Native <Modal>. Wait one frame after
+    // unmounting before triggering the native presentation.
+    cardTranslateY.value = withTiming(
+      600,
+      { duration: 200, easing: Easing.in(Easing.quad) },
+      (finished) => {
+        if (!finished) return;
+        runOnJS(onClose)();
+        runOnJS(setTimeout)(() => { void presentPaywall(); }, 50);
+      },
     );
   }, [onClose, cardTranslateY]);
 

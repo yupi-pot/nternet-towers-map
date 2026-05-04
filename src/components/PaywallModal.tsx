@@ -20,37 +20,42 @@ interface PresentOptions {
  * not as React children. There is no `<Modal>` to wrap.
  */
 export async function presentPaywall(options: PresentOptions = {}): Promise<void> {
-  const paywall = await adapty.getPaywall(PAYWALL_PLACEMENT);
+  try {
+    const paywall = await adapty.getPaywall(PAYWALL_PLACEMENT);
 
-  if (!paywall.hasViewConfiguration) {
-    console.warn(
-      `Adapty paywall for placement "${PAYWALL_PLACEMENT}" has no view configuration. ` +
-        `Toggle "Show on device" on in the Paywall Builder.`,
-    );
-    return;
+    if (!paywall.hasViewConfiguration) {
+      console.warn(
+        `[paywall] placement "${PAYWALL_PLACEMENT}" has no view configuration. ` +
+          `Toggle "Show on device" on in the Paywall Builder.`,
+      );
+      return;
+    }
+
+    const view = await createPaywallView(paywall);
+
+    view.setEventHandlers({
+      onCloseButtonPress() {
+        options.onClose?.();
+        return true;
+      },
+      onUrlPress(url) {
+        Linking.openURL(url);
+      },
+      onPurchaseCompleted(purchaseResult, product) {
+        if (purchaseResult.type === 'success') {
+          logSubscriptionPurchase(product);
+          options.onPurchase?.();
+        }
+        return purchaseResult.type !== 'user_cancelled';
+      },
+      onRestoreCompleted() {
+        options.onRestore?.();
+      },
+    });
+
+    await view.present();
+  } catch (err) {
+    // Surface failures — silent fire-and-forget makes debugging impossible.
+    console.warn('[paywall] failed to present:', err);
   }
-
-  const view = await createPaywallView(paywall);
-
-  view.setEventHandlers({
-    onCloseButtonPress() {
-      options.onClose?.();
-      return true;
-    },
-    onUrlPress(url) {
-      Linking.openURL(url);
-    },
-    onPurchaseCompleted(purchaseResult, product) {
-      if (purchaseResult.type === 'success') {
-        logSubscriptionPurchase(product);
-        options.onPurchase?.();
-      }
-      return purchaseResult.type !== 'user_cancelled';
-    },
-    onRestoreCompleted() {
-      options.onRestore?.();
-    },
-  });
-
-  await view.present();
 }
