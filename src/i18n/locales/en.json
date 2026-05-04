@@ -26,7 +26,9 @@
   "map": {
     "foundPrefix": "Found",
     "foundSuffix": "towers",
-    "filterAll": "All"
+    "filterAll": "All",
+    "hiddenBanner": "{{count}} towers hidden",
+    "hiddenBannerCta": "Get Premium →"
   },
   "list": {
     "title": "Towers",
@@ -55,7 +57,10 @@
     "reported": "Reported",
     "export": "↑ Export",
     "thanksTitle": "Thanks!",
-    "thanksBody": "Your report helps improve tower accuracy for everyone."
+    "thanksBody": "Your report helps improve tower accuracy for everyone.",
+    "coverageRemaining": "Elevation-aware coverage · {{count}} left",
+    "coverageLocked": "Get Premium for elevation-aware coverage",
+    "getPremium": "Get Premium →"
   },
   "settings": {
     "title": "Settings",

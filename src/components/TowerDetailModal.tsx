@@ -37,6 +37,8 @@ import {
   haversineDistance,
 } from '@/src/utils/towerUtils';
 import { useCompass } from '@/src/hooks/useCompass';
+import { presentPaywall } from '@/src/components/PaywallModal';
+import { usePremium } from '@/src/context/PremiumContext';
 import { CellTower, RADIO_COLORS, RADIO_LABELS } from '@/src/types';
 
 interface Props {
@@ -46,13 +48,22 @@ interface Props {
   /** Closes sheet only — coverage stays on map (X button, overlay tap, swipe) */
   onClose: () => void;
   onFlagInaccurate?: (tower: CellTower) => void;
+  /** Coverage availability for this tower view (shown as a small notice). */
+  coverageNotice?: 'remaining' | 'locked' | null;
+  coverageRemaining?: number;
 }
 
-export default function TowerDetailModal({ tower, userLat, userLon, onClose, onFlagInaccurate }: Props) {
+export default function TowerDetailModal({
+  tower, userLat, userLon, onClose, onFlagInaccurate,
+  coverageNotice = null, coverageRemaining = 0,
+}: Props) {
   const { t } = useTranslation();
+  const { isPremium } = usePremium();
   const insets = useSafeAreaInsets();
   const deviceHeading = useCompass();
   const [flagged, setFlagged] = useState(false);
+
+  const openPaywall = useCallback(() => { void presentPaywall(); }, []);
 
   const cardTranslateY = useSharedValue(500);
 
@@ -204,15 +215,48 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
             </View>
           )}
 
+          {/* Coverage quota notice */}
+          {!isPremium && coverageNotice === 'remaining' && (
+            <TouchableOpacity style={styles.coverageNoticeRemain} onPress={openPaywall} activeOpacity={0.85}>
+              <Text style={styles.coverageNoticeRemainText}>
+                {t('tower.coverageRemaining', { count: coverageRemaining })}
+              </Text>
+              <Text style={styles.coverageNoticeCta}>{t('tower.getPremium')}</Text>
+            </TouchableOpacity>
+          )}
+          {!isPremium && coverageNotice === 'locked' && (
+            <TouchableOpacity style={styles.coverageNoticeLocked} onPress={openPaywall} activeOpacity={0.85}>
+              <Text style={styles.coverageNoticeLockedText}>
+                🔒 {t('tower.coverageLocked')}
+              </Text>
+              <Text style={styles.coverageNoticeCta}>{t('tower.getPremium')}</Text>
+            </TouchableOpacity>
+          )}
+
           {/* Detail rows */}
           <View style={styles.contentBlock}>
             <View style={styles.details}>
               <InfoRow label={t('tower.cellId')} value={String(tower.cellid)} />
               {enodebId != null && (
-                <InfoRow label={t('tower.eNodeB')} value={String(enodebId)} />
+                <LockedInfoRow
+                  label={t('tower.eNodeB')}
+                  value={String(enodebId)}
+                  isPremium={isPremium}
+                  onPress={openPaywall}
+                />
               )}
-              <InfoRow label={t('tower.mccMnc')} value={`${tower.mcc} / ${tower.mnc}`} />
-              <InfoRow label={t('tower.lac')} value={String(tower.lac)} />
+              <LockedInfoRow
+                label={t('tower.mccMnc')}
+                value={`${tower.mcc} / ${tower.mnc}`}
+                isPremium={isPremium}
+                onPress={openPaywall}
+              />
+              <LockedInfoRow
+                label={t('tower.lac')}
+                value={String(tower.lac)}
+                isPremium={isPremium}
+                onPress={openPaywall}
+              />
               <TouchableOpacity onPress={handleCopyCoords}>
                 <InfoRow
                   label={t('tower.coordinates')}
@@ -220,10 +264,25 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
                   action={t('common.copy')}
                 />
               </TouchableOpacity>
-              <InfoRow label={t('tower.coverageRadius')} value={`~${tower.range.toLocaleString()} ${t('units.m')}`} />
-              <InfoRow label={t('tower.measurements')} value={`${tower.samples.toLocaleString()}`} />
+              <LockedInfoRow
+                label={t('tower.coverageRadius')}
+                value={`~${tower.range.toLocaleString()} ${t('units.m')}`}
+                isPremium={isPremium}
+                onPress={openPaywall}
+              />
+              <LockedInfoRow
+                label={t('tower.measurements')}
+                value={`${tower.samples.toLocaleString()}`}
+                isPremium={isPremium}
+                onPress={openPaywall}
+              />
               {tower.averageSignalStrength !== 0 && (
-                <InfoRow label={t('tower.avgSignal')} value={`${tower.averageSignalStrength} dBm`} />
+                <LockedInfoRow
+                  label={t('tower.avgSignal')}
+                  value={`${tower.averageSignalStrength} dBm`}
+                  isPremium={isPremium}
+                  onPress={openPaywall}
+                />
               )}
             </View>
           </View>
@@ -239,8 +298,13 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.actionBtn, styles.actionBtnPrimary]} onPress={handleExport}>
-              <Text style={styles.actionBtnTextPrimary}>{t('tower.export')}</Text>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.actionBtnPrimary]}
+              onPress={isPremium ? handleExport : openPaywall}
+            >
+              <Text style={styles.actionBtnTextPrimary}>
+                {isPremium ? t('tower.export') : `🔒 ${t('tower.export')}`}
+              </Text>
             </TouchableOpacity>
           </View>
           </Animated.View>
@@ -259,6 +323,25 @@ function InfoRow({ label, value, action }: { label: string; value: string; actio
         {action && <Text style={styles.infoAction}>{action}</Text>}
       </View>
     </View>
+  );
+}
+
+function LockedInfoRow({
+  label, value, isPremium, onPress,
+}: { label: string; value: string; isPremium: boolean; onPress: () => void }) {
+  if (isPremium) {
+    return <InfoRow label={label} value={value} />;
+  }
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.infoRow}>
+        <Text style={styles.infoLabel}>{label}</Text>
+        <View style={styles.infoRight}>
+          <Text style={styles.infoValueLocked}>••• •••</Text>
+          <Text style={styles.infoLock}>🔒</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -335,7 +418,23 @@ const styles = StyleSheet.create({
   infoRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   infoLabel: { fontSize: 14, color: '#64748b' },
   infoValue: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
+  infoValueLocked: { fontSize: 14, fontWeight: '700', color: '#cbd5e1', letterSpacing: 2 },
+  infoLock: { fontSize: 12, opacity: 0.55 },
   infoAction: { fontSize: 12, color: '#3b82f6', fontWeight: '600' },
+
+  coverageNoticeRemain: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: '#eff6ff', borderRadius: 12,
+    paddingVertical: 10, paddingHorizontal: 14, marginBottom: 12,
+  },
+  coverageNoticeRemainText: { fontSize: 13, fontWeight: '600', color: '#1d4ed8', flex: 1 },
+  coverageNoticeLocked: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: '#fef3c7', borderRadius: 12,
+    paddingVertical: 10, paddingHorizontal: 14, marginBottom: 12,
+  },
+  coverageNoticeLockedText: { fontSize: 13, fontWeight: '600', color: '#92400e', flex: 1 },
+  coverageNoticeCta: { fontSize: 13, fontWeight: '700', color: '#3b82f6', marginLeft: 10 },
 
   actions: { flexDirection: 'row', gap: 10 },
   actionBtn: {

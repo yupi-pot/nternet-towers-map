@@ -16,7 +16,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import TowerDetailModal from '@/src/components/TowerDetailModal';
+import { presentPaywall } from '@/src/components/PaywallModal';
+import { usePremium } from '@/src/context/PremiumContext';
 import { useTowersContext } from '@/src/context/TowersContext';
+import { isPremiumOnlyTower } from '@/src/utils/premiumTowers';
 import { scheduleReviewAfterFiltersUsed } from '@/src/utils/rateApp';
 import { getCarrierName } from '@/src/utils/carrierNames';
 import {
@@ -182,9 +185,15 @@ const Separator = () => <View style={styles.separator} />;
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function ListTab() {
   const { t } = useTranslation();
-  const { towers, isLoading, error, location } = useTowersContext();
+  const { towers: allTowers, isLoading, error, location } = useTowersContext();
+  const { isPremium } = usePremium();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  const towers = useMemo(
+    () => (isPremium ? allTowers : allTowers.filter((t) => !isPremiumOnlyTower(t))),
+    [allTowers, isPremium],
+  );
 
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -192,6 +201,10 @@ export default function ListTab() {
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
 
   const toggleFilter = (radio: CellTower['radio']) => {
+    if (!isPremium) {
+      void presentPaywall();
+      return;
+    }
     void scheduleReviewAfterFiltersUsed();
     setActiveFilters((prev) => {
       const next = new Set(prev);
@@ -291,6 +304,7 @@ export default function ListTab() {
                 <Text style={[styles.pillCount, { color: active ? color + '99' : '#9ca3af' }]}>
                   {radioCounts[radio]}
                 </Text>
+                {!isPremium && <Text style={styles.pillLock}>🔒</Text>}
               </TouchableOpacity>
             );
           })}
@@ -402,6 +416,7 @@ const styles = StyleSheet.create({
   pillDot: { width: 6, height: 6, borderRadius: 3 },
   pillText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.1 },
   pillCount: { fontSize: 11, fontWeight: '500' },
+  pillLock: { fontSize: 10, marginLeft: 2, opacity: 0.7 },
 
   // ── Section labels ──
   sectionLabel: {

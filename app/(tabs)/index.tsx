@@ -34,8 +34,12 @@ import { MapErrorBoundary } from '@/src/components/MapErrorBoundary';
 import CoverageOverlay from '@/src/components/CoverageOverlay';
 import TowerDetailModal from '@/src/components/TowerDetailModal';
 import { TowerMarker, TOWER_MARKER_ANCHOR } from '@/src/components/TowerMarker';
+import { presentPaywall } from '@/src/components/PaywallModal';
+import { usePremium } from '@/src/context/PremiumContext';
 import { useTowersContext } from '@/src/context/TowersContext';
+import { useCoverageQuota } from '@/src/hooks/useCoverageQuota';
 import { CellTower, RADIO_COLORS } from '@/src/types';
+import { isPremiumOnlyTower } from '@/src/utils/premiumTowers';
 import { scheduleReviewAfterFiltersUsed } from '@/src/utils/rateApp';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -291,11 +295,19 @@ export default function MapTab() {
   const router = useRouter();
   const { t } = useTranslation();
   const {
-    towers,
+    towers: allTowers,
     isCapped,
     location, locationLoading, locationError,
     mapRegionRef, refreshCurrentRegion,
   } = useTowersContext();
+  const { isPremium } = usePremium();
+  const coverageQuota = useCoverageQuota();
+
+  const towers = useMemo(
+    () => (isPremium ? allTowers : allTowers.filter((t) => !isPremiumOnlyTower(t))),
+    [allTowers, isPremium],
+  );
+  const hiddenCount = isPremium ? 0 : allTowers.length - towers.length;
 
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const [mapFilters,    setMapFilters]    = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
@@ -316,6 +328,7 @@ export default function MapTab() {
   const isProgrammaticMoveRef  = useRef(false);
   // Prevents MapView.onPress from clearing coverage on the same tap that opened it
   const markerJustPressedRef   = useRef(false);
+  const lastCoverageKeyRef     = useRef<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
 
   // Secret: tap title 7× to relaunch onboarding
@@ -349,9 +362,19 @@ export default function MapTab() {
     void scheduleReviewAfterFiltersUsed();
   }, []);
 
-  const handleAllChip = useCallback(() => applyFilters(new Set(ALL_RADIOS)), [applyFilters]);
+  const handleAllChip = useCallback(() => {
+    if (!isPremium) {
+      void presentPaywall();
+      return;
+    }
+    applyFilters(new Set(ALL_RADIOS));
+  }, [applyFilters, isPremium]);
 
   const toggleFilter = useCallback((radio: CellTower['radio']) => {
+    if (!isPremium) {
+      void presentPaywall();
+      return;
+    }
     void scheduleReviewAfterFiltersUsed();
     setActiveFilters((prev) => {
       const allActive = prev.size === ALL_RADIOS.length;
@@ -369,7 +392,7 @@ export default function MapTab() {
       filterTimerRef.current = setTimeout(() => setMapFilters(new Set(next)), 200);
       return next;
     });
-  }, []);
+  }, [isPremium]);
 
   const handlePanDrag = useCallback(() => {
     userHasDraggedRef.current = true;
@@ -412,7 +435,17 @@ export default function MapTab() {
   const handleTowerPress = useCallback((tower: CellTower) => {
     markerJustPressedRef.current = true; // block MapView.onPress for this tap
     setSelectedTower(tower);
-    setCoverageTower(tower);
+    const key = `${tower.mcc}-${tower.mnc}-${tower.lac}-${tower.cellid}`;
+    const canShowCoverage = isPremium || coverageQuota.remaining > 0;
+    if (canShowCoverage) {
+      setCoverageTower(tower);
+      if (!isPremium && key !== lastCoverageKeyRef.current) {
+        lastCoverageKeyRef.current = key;
+        void coverageQuota.consume();
+      }
+    } else {
+      setCoverageTower(null);
+    }
     setRippleItems([]);
 
     const region = currentRegion ?? mapRegionRef.current;
@@ -433,7 +466,7 @@ export default function MapTab() {
       },
       400,
     );
-  }, [currentRegion, mapRegionRef]);
+  }, [currentRegion, mapRegionRef, isPremium, coverageQuota]);
 
   const filteredTowers = useMemo(
     () => towers.filter((t) => mapFilters.has(t.radio)),
@@ -666,6 +699,7 @@ export default function MapTab() {
               activeOpacity={0.75}
             >
               <Text style={[styles.chipText, !isAllActive && styles.chipTextInactive]}>{t('map.filterAll')}</Text>
+              {!isPremium && <Text style={styles.chipLock}> 🔒</Text>}
             </TouchableOpacity>
             {ALL_RADIOS.map((radio) => {
               const active = !isAllActive && activeFilters.has(radio);
@@ -689,10 +723,24 @@ export default function MapTab() {
                   <Text style={[styles.pillCount, { color: active ? color + '99' : '#9ca3af' }]}>
                     {radioCounts[radio]}
                   </Text>
+                  {!isPremium && <Text style={styles.pillLock}>🔒</Text>}
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
+
+          {hiddenCount > 0 && (
+            <TouchableOpacity
+              style={styles.hiddenBanner}
+              onPress={() => void presentPaywall()}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.hiddenBannerText}>
+                {t('map.hiddenBanner', { count: hiddenCount })}
+              </Text>
+              <Text style={styles.hiddenBannerCta}>{t('map.hiddenBannerCta')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </SafeAreaView>
 
@@ -710,6 +758,14 @@ export default function MapTab() {
         userLat={location?.latitude ?? null}
         userLon={location?.longitude ?? null}
         onClose={() => setSelectedTower(null)}
+        coverageNotice={
+          isPremium || !selectedTower
+            ? null
+            : coverageTower
+              ? 'remaining'
+              : 'locked'
+        }
+        coverageRemaining={coverageQuota.remaining}
       />
 
     </View>
@@ -791,6 +847,23 @@ const styles = StyleSheet.create({
   pillDot: { width: 6, height: 6, borderRadius: 3 },
   pillText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.1 },
   pillCount: { fontSize: 11, fontWeight: '500' },
+  pillLock: { fontSize: 10, marginLeft: 2, opacity: 0.7 },
+  chipLock: { fontSize: 10, color: '#fff', opacity: 0.85 },
+
+  hiddenBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(245, 158, 11, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.45)',
+    borderRadius: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    marginTop: 4,
+  },
+  hiddenBannerText: { fontSize: 13, fontWeight: '600', color: '#92400e', flex: 1 },
+  hiddenBannerCta: { fontSize: 13, fontWeight: '700', color: '#b45309', marginLeft: 10 },
 
   iconBtn: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   locationBtn: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
