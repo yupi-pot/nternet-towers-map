@@ -73,7 +73,11 @@
     "contactUs": "Связаться с нами",
     "copied": "Скопировано",
     "languagePickerTitle": "Язык",
-    "languagePickerSystemOption": "Язык системы"
+    "languagePickerSystemOption": "Язык системы",
+    "premiumActive": "Cellr Premium",
+    "renewsOn": "Продлится {{date}}",
+    "expiresOn": "Истекает {{date}}",
+    "manageSubscription": "Управлять"
   },
   "tabs": {
     "map": "Карта",

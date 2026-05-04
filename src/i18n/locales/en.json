@@ -76,7 +76,11 @@
     "contactUs": "Contact Us",
     "copied": "Copied",
     "languagePickerTitle": "Language",
-    "languagePickerSystemOption": "Use device language"
+    "languagePickerSystemOption": "Use device language",
+    "premiumActive": "Cellr Premium",
+    "renewsOn": "Renews on {{date}}",
+    "expiresOn": "Expires on {{date}}",
+    "manageSubscription": "Manage"
   },
   "tabs": {
     "map": "Map",

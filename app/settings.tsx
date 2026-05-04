@@ -57,7 +57,7 @@ async function getOrCreateUserId(): Promise<string> {
 export default function SettingsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { isPremium } = usePremium();
+  const { isPremium, expiresAt, willRenew } = usePremium();
   const insets = useSafeAreaInsets();
   const [userId, setUserId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -109,6 +109,23 @@ export default function SettingsScreen() {
     ? SUPPORTED_LANGUAGES.find((l) => l.code === storedLang)?.native ?? storedLang
     : t('settings.languageSystem');
 
+  const formattedExpiry = expiresAt
+    ? new Intl.DateTimeFormat(undefined, { dateStyle: 'long' }).format(expiresAt)
+    : null;
+  const expiryLabel = formattedExpiry
+    ? willRenew
+      ? t('settings.renewsOn', { date: formattedExpiry })
+      : t('settings.expiresOn', { date: formattedExpiry })
+    : null;
+
+  const openManageSubscription = () => {
+    const url =
+      Platform.OS === 'ios'
+        ? 'https://apps.apple.com/account/subscriptions'
+        : 'https://play.google.com/store/account/subscriptions';
+    Linking.openURL(url).catch(() => {});
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -142,6 +159,27 @@ export default function SettingsScreen() {
             <Ionicons name="sparkles" size={20} color="#fff" />
             <Text style={styles.premiumCtaText}>{t('settings.getPremium')}</Text>
             <Ionicons name="chevron-forward" size={18} color="#fff" />
+          </TouchableOpacity>
+        )}
+
+        {isPremium && (
+          <TouchableOpacity
+            style={styles.premiumActiveCard}
+            onPress={openManageSubscription}
+            activeOpacity={0.7}
+          >
+            <View style={styles.premiumActiveIcon}>
+              <Ionicons name="sparkles" size={20} color="#fff" />
+            </View>
+            <View style={styles.premiumActiveBody}>
+              <Text style={styles.premiumActiveTitle}>{t('settings.premiumActive')}</Text>
+              {expiryLabel && (
+                <Text style={styles.premiumActiveSub}>{expiryLabel}</Text>
+              )}
+            </View>
+            <Text style={styles.premiumActiveAction}>
+              {t('settings.manageSubscription')}
+            </Text>
           </TouchableOpacity>
         )}
 
@@ -299,6 +337,44 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     letterSpacing: -0.2,
+  },
+
+  premiumActiveCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    gap: 12,
+  },
+  premiumActiveIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#3b82f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumActiveBody: { flex: 1 },
+  premiumActiveTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1c1c1e',
+    letterSpacing: -0.2,
+  },
+  premiumActiveSub: {
+    fontSize: 13,
+    color: '#8e8e93',
+    marginTop: 2,
+  },
+  premiumActiveAction: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#3b82f6',
   },
 
   sectionLabel: {

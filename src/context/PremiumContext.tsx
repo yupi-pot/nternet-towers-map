@@ -12,6 +12,10 @@ import { ACCESS_LEVEL_ID } from '@/src/config/adapty';
 interface PremiumContextValue {
   isPremium: boolean;
   isLoading: boolean;
+  /** When the current premium period ends. Null if not premium. */
+  expiresAt: Date | null;
+  /** Whether the subscription is set to auto-renew at expiresAt. */
+  willRenew: boolean;
   /** Re-fetch the latest Adapty profile (e.g. after a purchase). */
   refresh: () => Promise<void>;
   /** Restore prior purchases (Apple requirement on paywall screens). */
@@ -20,16 +24,17 @@ interface PremiumContextValue {
 
 const PremiumContext = createContext<PremiumContextValue | null>(null);
 
-function profileHasPremium(profile: AdaptyProfile | null | undefined): boolean {
-  return profile?.accessLevels?.[ACCESS_LEVEL_ID]?.isActive ?? false;
-}
-
 export function PremiumProvider({ children }: { children: React.ReactNode }) {
   const [isPremium, setIsPremium] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [willRenew, setWillRenew] = useState(false);
 
   const applyProfile = useCallback((profile: AdaptyProfile | null | undefined) => {
-    setIsPremium(profileHasPremium(profile));
+    const access = profile?.accessLevels?.[ACCESS_LEVEL_ID];
+    setIsPremium(access?.isActive ?? false);
+    setExpiresAt(access?.expiresAt ? new Date(access.expiresAt) : null);
+    setWillRenew(access?.willRenew ?? false);
   }, []);
 
   useEffect(() => {
@@ -75,7 +80,7 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
   }, [applyProfile]);
 
   return (
-    <PremiumContext.Provider value={{ isPremium, isLoading, refresh, restore }}>
+    <PremiumContext.Provider value={{ isPremium, isLoading, expiresAt, willRenew, refresh, restore }}>
       {children}
     </PremiumContext.Provider>
   );

@@ -72,7 +72,11 @@
     "contactUs": "Kontakt oss",
     "copied": "Kopiert",
     "languagePickerTitle": "Språk",
-    "languagePickerSystemOption": "Bruk enhetens språk"
+    "languagePickerSystemOption": "Bruk enhetens språk",
+    "premiumActive": "Cellr Premium",
+    "renewsOn": "Fornyes {{date}}",
+    "expiresOn": "Utløper {{date}}",
+    "manageSubscription": "Administrer"
   },
   "tabs": {
     "map": "Kart",

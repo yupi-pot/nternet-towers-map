@@ -72,7 +72,11 @@
     "contactUs": "Kontakta oss",
     "copied": "Kopierat",
     "languagePickerTitle": "Språk",
-    "languagePickerSystemOption": "Använd enhetens språk"
+    "languagePickerSystemOption": "Använd enhetens språk",
+    "premiumActive": "Cellr Premium",
+    "renewsOn": "Förnyas {{date}}",
+    "expiresOn": "Upphör {{date}}",
+    "manageSubscription": "Hantera"
   },
   "tabs": {
     "map": "Karta",
