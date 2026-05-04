@@ -7,6 +7,8 @@ import * as SecureStore from 'expo-secure-store';
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+import { presentPaywall } from '@/src/components/PaywallModal';
 import {
   Dimensions,
   FlatList,
@@ -264,6 +266,9 @@ export default function OnboardingScreen() {
   const finish = useCallback(async () => {
     await SecureStore.setItemAsync('hasSeenOnboarding', 'true');
     router.replace('/(tabs)' as never);
+    // Show paywall on top of the map after onboarding. Fire-and-forget —
+    // failures or no-config paywalls just no-op so the user still lands on tabs.
+    presentPaywall().catch(() => {});
   }, []);
 
   const advance = useCallback(() => {
