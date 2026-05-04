@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PRIVACY_URL = 'https://www.aigma.co/p/688f0dc';
 const TERMS_URL = 'https://www.aigma.co/p/3a9cdad';
-const SUPPORT_EMAIL = 'support@cellr.app';
+const SUPPORT_EMAIL = 'genue.luben@gmail.com';
 const USER_ID_KEY = 'cellr_user_id';
 
 function generateUserId(): string {
