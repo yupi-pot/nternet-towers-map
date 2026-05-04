@@ -89,18 +89,17 @@ export default function SettingsScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      {/* Header — matches Map/List large title */}
+      <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.headerBack}
           hitSlop={10}
           activeOpacity={0.6}
         >
-          <Ionicons name="chevron-back" size={26} color="#1c1c1e" />
+          <Ionicons name="chevron-back" size={28} color="#1c1c1e" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerBack} />
+        <Text style={styles.largeTitle}>Settings</Text>
       </View>
 
       <ScrollView
@@ -113,7 +112,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>About</Text>
         <View style={styles.group}>
           <Row
-            icon="lock-closed-outline"
+            icon="lock-closed"
             iconColor="#3b82f6"
             label="Privacy Policy"
             onPress={() => openURL(PRIVACY_URL)}
@@ -121,7 +120,7 @@ export default function SettingsScreen() {
           />
           <Separator />
           <Row
-            icon="document-text-outline"
+            icon="document-text"
             iconColor="#8b5cf6"
             label="Terms of Use"
             onPress={() => openURL(TERMS_URL)}
@@ -133,7 +132,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>Preferences</Text>
         <View style={styles.group}>
           <Row
-            icon="globe-outline"
+            icon="globe"
             iconColor="#10b981"
             label="Language"
             value="System"
@@ -146,7 +145,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>Support</Text>
         <View style={styles.group}>
           <Row
-            icon="mail-outline"
+            icon="mail"
             iconColor="#f97316"
             label="Contact Us"
             onPress={openSupportEmail}
@@ -154,18 +153,17 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* Footer info */}
-        <View style={styles.footer}>
-          <Text style={styles.footerVersion}>Cellr v{appVersion}</Text>
-          <TouchableOpacity onPress={copyUserId} activeOpacity={0.6}>
-            <Text style={styles.footerUserId} selectable>
-              {userId ? `${userId}` : '…'}
-            </Text>
-            <Text style={styles.footerHint}>
-              {copied ? 'Copied to clipboard' : 'Tap to copy User ID'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Footer */}
+        <TouchableOpacity
+          style={styles.footer}
+          onPress={copyUserId}
+          activeOpacity={0.6}
+        >
+          <Text style={styles.footerText}>Cellr v{appVersion}</Text>
+          <Text style={styles.footerText} selectable>
+            {copied ? 'Copied' : userId ?? '…'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -217,22 +215,22 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingBottom: 10,
+    paddingHorizontal: 8,
+    paddingBottom: 6,
     backgroundColor: '#f2f2f7',
+    gap: 4,
   },
   headerBack: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: 17,
+  largeTitle: {
+    fontSize: 36,
     fontWeight: '600',
     color: '#1c1c1e',
-    letterSpacing: -0.2,
+    letterSpacing: -0.5,
   },
 
   scroll: {
@@ -295,25 +293,12 @@ const styles = StyleSheet.create({
 
   footer: {
     alignItems: 'center',
-    marginTop: 36,
-    gap: 8,
+    marginTop: 32,
+    gap: 4,
   },
-  footerVersion: {
-    fontSize: 13,
-    color: '#8e8e93',
-    fontWeight: '500',
-  },
-  footerUserId: {
-    fontSize: 11,
+  footerText: {
+    fontSize: 12,
     color: '#aeaeb2',
-    fontVariant: ['tabular-nums'],
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  footerHint: {
-    fontSize: 11,
-    color: '#c7c7cc',
-    textAlign: 'center',
-    marginTop: 2,
+    letterSpacing: 0.1,
   },
 });
