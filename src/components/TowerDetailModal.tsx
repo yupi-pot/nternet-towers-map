@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   runOnJS,
@@ -143,7 +143,7 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
     // Tapping above the card closes the sheet only (coverage stays).
     // Second tap on the map (via MapView.onPress) then closes coverage.
     <Modal visible transparent animationType="none" onRequestClose={closeCard}>
-      <View style={styles.overlay}>
+      <GestureHandlerRootView style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={closeCard} />
         <GestureDetector gesture={swipeGesture}>
           <Animated.View style={[styles.card, { paddingBottom: 28 + insets.bottom }, cardAnimStyle]}>
@@ -245,7 +245,7 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
           </View>
           </Animated.View>
         </GestureDetector>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

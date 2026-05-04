@@ -81,18 +81,23 @@ AsyncStorage.getItem(STORAGE_KEY)
   .catch(() => {});
 
 export async function setAppLanguage(code: LanguageCode | null): Promise<void> {
-  if (code === null) {
-    await AsyncStorage.removeItem(STORAGE_KEY);
-    await i18n.changeLanguage(detectDeviceLanguage());
-    return;
-  }
-  await AsyncStorage.setItem(STORAGE_KEY, code);
-  await i18n.changeLanguage(code);
+  // Persist if AsyncStorage is available; ignore failures so the in-session
+  // language change still applies even if the native module is missing
+  // (e.g. dev client built before async-storage was added).
+  try {
+    if (code === null) await AsyncStorage.removeItem(STORAGE_KEY);
+    else await AsyncStorage.setItem(STORAGE_KEY, code);
+  } catch {}
+  await i18n.changeLanguage(code ?? detectDeviceLanguage());
 }
 
 export async function getStoredLanguage(): Promise<LanguageCode | null> {
-  const v = await AsyncStorage.getItem(STORAGE_KEY);
-  return v && isSupported(v) ? v : null;
+  try {
+    const v = await AsyncStorage.getItem(STORAGE_KEY);
+    return v && isSupported(v) ? v : null;
+  } catch {
+    return null;
+  }
 }
 
 // Unit system follows the device region, not the chosen UI language —
