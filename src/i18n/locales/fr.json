@@ -26,7 +26,10 @@
   "map": {
     "foundPrefix": "Trouvées",
     "foundSuffix": "antennes",
-    "filterAll": "Toutes"
+    "filterAll": "Toutes",
+    "hiddenBanner_one": "1 antenne masquée",
+    "hiddenBanner_other": "{{count}} antennes masquées",
+    "hiddenBannerCta": "Passer Premium →"
   },
   "list": {
     "title": "Antennes",

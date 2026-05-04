@@ -26,7 +26,10 @@
   "map": {
     "foundPrefix": "Fant",
     "foundSuffix": "master",
-    "filterAll": "Alle"
+    "filterAll": "Alle",
+    "hiddenBanner_one": "1 mast skjult",
+    "hiddenBanner_other": "{{count}} master skjult",
+    "hiddenBannerCta": "Få Premium →"
   },
   "list": {
     "title": "Master",

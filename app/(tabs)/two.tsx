@@ -194,6 +194,7 @@ export default function ListTab() {
     () => (isPremium ? allTowers : allTowers.filter((t) => !isPremiumOnlyTower(t))),
     [allTowers, isPremium],
   );
+  const hiddenCount = isPremium ? 0 : allTowers.length - towers.length;
 
   const [activeFilters, setActiveFilters] = useState<Set<CellTower['radio']>>(new Set(ALL_RADIOS));
   const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -332,6 +333,32 @@ export default function ListTab() {
           ListHeaderComponent={listHeader}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 80 }]}
         />
+      )}
+
+      {/* ── Hidden-towers banner (matches map tab) ── */}
+      {hiddenCount > 0 && (
+        <View
+          style={[styles.hiddenBannerWrap, { bottom: insets.bottom + 16 }]}
+          pointerEvents="box-none"
+        >
+          <TouchableOpacity onPress={() => void presentPaywall()} activeOpacity={0.75}>
+            {Platform.OS === 'ios' && isLiquidGlassAvailable() ? (
+              <GlassView style={styles.hiddenBanner}>
+                <Text style={styles.hiddenBannerText}>
+                  {t('map.hiddenBanner', { count: hiddenCount })}
+                </Text>
+                <Text style={styles.hiddenBannerCta}>{t('map.hiddenBannerCta')}</Text>
+              </GlassView>
+            ) : (
+              <View style={[styles.hiddenBanner, styles.hiddenBannerFallback]}>
+                <Text style={styles.hiddenBannerText}>
+                  {t('map.hiddenBanner', { count: hiddenCount })}
+                </Text>
+                <Text style={styles.hiddenBannerCta}>{t('map.hiddenBannerCta')}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       )}
 
       <TowerDetailModal
@@ -570,6 +597,29 @@ const styles = StyleSheet.create({
   confLabel: { fontSize: 11, fontWeight: '600' },
 
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#e5e5ea', marginLeft: 19 },
+
+  // ── Hidden-towers banner ──
+  hiddenBannerWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5,
+  },
+  hiddenBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
+    paddingHorizontal: 20,
+    borderRadius: 26,
+    gap: 8,
+    overflow: 'hidden',
+  },
+  hiddenBannerFallback: { backgroundColor: 'rgba(255,255,255,0.92)' },
+  hiddenBannerText: { fontSize: 13, fontWeight: '600', color: '#1c1c1e' },
+  hiddenBannerCta: { fontSize: 13, fontWeight: '700', color: '#3b82f6' },
 
   // ── Empty state ──
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10, padding: 32 },

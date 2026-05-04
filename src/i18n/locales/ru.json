@@ -26,7 +26,11 @@
   "map": {
     "foundPrefix": "Найдено",
     "foundSuffix": "вышек",
-    "filterAll": "Все"
+    "filterAll": "Все",
+    "hiddenBanner_one": "1 вышка скрыта",
+    "hiddenBanner_few": "{{count}} вышки скрыты",
+    "hiddenBanner_many": "{{count}} вышек скрыто",
+    "hiddenBannerCta": "Получить Premium →"
   },
   "list": {
     "title": "Вышки",

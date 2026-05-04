@@ -26,7 +26,11 @@
   "map": {
     "foundPrefix": "Znaleziono",
     "foundSuffix": "masztów",
-    "filterAll": "Wszystkie"
+    "filterAll": "Wszystkie",
+    "hiddenBanner_one": "1 maszt ukryty",
+    "hiddenBanner_few": "{{count}} maszty ukryte",
+    "hiddenBanner_many": "{{count}} masztów ukrytych",
+    "hiddenBannerCta": "Kup Premium →"
   },
   "list": {
     "title": "Maszty",

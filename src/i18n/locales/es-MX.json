@@ -26,7 +26,10 @@
   "map": {
     "foundPrefix": "Encontradas",
     "foundSuffix": "torres",
-    "filterAll": "Todas"
+    "filterAll": "Todas",
+    "hiddenBanner_one": "1 torre oculta",
+    "hiddenBanner_other": "{{count}} torres ocultas",
+    "hiddenBannerCta": "Obtener Premium →"
   },
   "list": {
     "title": "Torres",

@@ -26,7 +26,10 @@
   "map": {
     "foundPrefix": "Hittade",
     "foundSuffix": "master",
-    "filterAll": "Alla"
+    "filterAll": "Alla",
+    "hiddenBanner_one": "1 mast dold",
+    "hiddenBanner_other": "{{count}} master dolda",
+    "hiddenBannerCta": "Skaffa Premium →"
   },
   "list": {
     "title": "Master",

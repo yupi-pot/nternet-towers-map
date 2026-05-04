@@ -27,7 +27,8 @@
     "foundPrefix": "Found",
     "foundSuffix": "towers",
     "filterAll": "All",
-    "hiddenBanner": "{{count}} towers hidden",
+    "hiddenBanner_one": "1 tower hidden",
+    "hiddenBanner_other": "{{count}} towers hidden",
     "hiddenBannerCta": "Get Premium →"
   },
   "list": {

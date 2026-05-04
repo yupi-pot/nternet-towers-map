@@ -26,7 +26,10 @@
   "map": {
     "foundPrefix": "Gefunden",
     "foundSuffix": "Masten",
-    "filterAll": "Alle"
+    "filterAll": "Alle",
+    "hiddenBanner_one": "1 Mast versteckt",
+    "hiddenBanner_other": "{{count}} Masten versteckt",
+    "hiddenBannerCta": "Premium holen →"
   },
   "list": {
     "title": "Masten",
