@@ -65,6 +65,8 @@ interface ImagePage {
   image: any;
   title: string;
   body: string;
+  permission?: PermissionKind;
+  buttonText?: string;
 }
 
 type Page = VideoPage | IconPage | ImagePage;
@@ -76,30 +78,14 @@ const PAGES: Page[] = [
     title: 'Cell Tower Map',
   },
   {
-    key: 'tracking',
-    type: 'icon',
-    icon: 'shield-checkmark-outline',
-    title: 'Help us measure\nwhat\'s working',
-    body: 'We use AppsFlyer to understand which ad or campaign brought you here, so we can keep improving the app. This is fully optional — declining won\'t affect any feature, and your tower data is never shared.',
-    permission: 'tracking',
-    buttonText: 'Continue',
-  },
-  {
-    key: 'notifications',
-    type: 'icon',
-    icon: 'notifications-outline',
-    title: 'Stay in the loop',
-    body: 'Get a heads-up when new towers appear in your area, when nearby coverage changes, or when there\'s an important service update. You can turn this off anytime in Settings.',
-    permission: 'notifications',
-    buttonText: 'Enable Notifications',
-  },
-  {
     key: 'database',
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-tower.jpg'),
     title: 'Real towers. Verified locations',
     body: 'Carrier coverage maps are guesswork — painted to look good, not to be accurate. Ours cross-references real tower registrations, confidence-rated and refreshed every few days.',
+    permission: 'tracking',
+    buttonText: 'Continue',
   },
   {
     key: 'antenna',
@@ -108,6 +94,8 @@ const PAGES: Page[] = [
     image: require('../assets/images/onboarding-antenna.jpg'),
     title: 'Stop pointing your\nantenna blind',
     body: 'Get the exact compass bearing to any tower. No guessing, no wasted install. Essential for signal boosters, rooftop antennas, and rural setups.',
+    permission: 'notifications',
+    buttonText: 'Enable Notifications',
   },
   {
     key: 'terrain',
@@ -337,7 +325,9 @@ export default function OnboardingScreen() {
 
   const currentPage = PAGES[currentIndex];
   const currentPermission =
-    currentPage.type === 'icon' ? currentPage.permission : undefined;
+    currentPage.type === 'icon' || currentPage.type === 'image'
+      ? currentPage.permission
+      : undefined;
 
   return (
     <View style={styles.container}>

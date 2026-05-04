@@ -91,15 +91,16 @@ export default function SettingsScreen() {
 
       {/* Header — matches Map/List large title */}
       <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
+        <Text style={styles.largeTitle}>Settings</Text>
+        <View style={{ flex: 1 }} />
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.headerBack}
+          style={styles.headerClose}
           hitSlop={10}
           activeOpacity={0.6}
         >
-          <Ionicons name="chevron-back" size={28} color="#1c1c1e" />
+          <Ionicons name="close" size={22} color="#1c1c1e" />
         </TouchableOpacity>
-        <Text style={styles.largeTitle}>Settings</Text>
       </View>
 
       <ScrollView
@@ -206,17 +207,20 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
+    alignItems: 'flex-end',
+    paddingHorizontal: 20,
     paddingBottom: 6,
     backgroundColor: '#f2f2f7',
     gap: 4,
   },
-  headerBack: {
-    width: 36,
-    height: 36,
+  headerClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(118,118,128,0.12)',
+    marginBottom: 4,
   },
   largeTitle: {
     fontSize: 36,

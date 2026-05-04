@@ -625,12 +625,33 @@ export default function MapTab() {
         />
         <View style={styles.statusBar} pointerEvents="auto">
           {/* Title row — tap 7× to relaunch onboarding */}
-          <TouchableOpacity onPress={handleTitleTap} activeOpacity={1} style={styles.titleRow}>
-            <Text style={styles.bigTitle}>Found </Text>
-            <AnimatedCount value={displayCount} textStyle={styles.bigTitleCount} />
-            {isCapped && <Text style={styles.bigTitleCount}>+</Text>}
-            <Text style={styles.bigTitle}> towers</Text>
-          </TouchableOpacity>
+          <View style={styles.titleRow}>
+            <TouchableOpacity onPress={handleTitleTap} activeOpacity={1} style={styles.titleTapArea}>
+              <Text style={styles.bigTitle}>Found </Text>
+              <AnimatedCount value={displayCount} textStyle={styles.bigTitleCount} />
+              {isCapped && <Text style={styles.bigTitleCount}>+</Text>}
+              <Text style={styles.bigTitle}> towers</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push('/settings' as never)}
+              hitSlop={10}
+              activeOpacity={0.6}
+            >
+              {HAS_LIQUID_GLASS ? (
+                <NativeGlassView
+                  glassEffectStyle="regular"
+                  isInteractive
+                  style={styles.headerSettingsBtn}
+                >
+                  <Ionicons name="settings-outline" size={22} color="#1c1c1e" />
+                </NativeGlassView>
+              ) : (
+                <View style={[styles.headerSettingsBtn, styles.headerSettingsBtnFallback]}>
+                  <Ionicons name="settings-outline" size={22} color="#1c1c1e" />
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
 
           {/* Filter pills — single line horizontal scroll */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
@@ -669,17 +690,6 @@ export default function MapTab() {
           </ScrollView>
         </View>
       </SafeAreaView>
-
-      {/* ── Settings ── */}
-      <TouchableOpacity
-        style={styles.settingsBtnWrap}
-        onPress={() => router.push('/settings' as never)}
-        activeOpacity={0.75}
-      >
-        <GlassView style={styles.locationBtn}>
-          <Ionicons name="settings-outline" size={22} color="#1c1c1e" />
-        </GlassView>
-      </TouchableOpacity>
 
       {/* ── My location ── */}
       {location && (
@@ -734,7 +744,20 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     paddingTop: 10, paddingBottom: 12, paddingHorizontal: 20, gap: 10,
   },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-end' },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
+  titleTapArea: { flex: 1, flexDirection: 'row', alignItems: 'flex-end' },
+  headerSettingsBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    marginBottom: 2,
+  },
+  headerSettingsBtnFallback: {
+    backgroundColor: 'rgba(255,255,255,0.92)',
+  },
   bigTitle: {
     fontSize: 36, fontWeight: '600', color: '#1c1c1e', letterSpacing: -0.5,
     textShadowColor: 'rgba(255,255,255,0.7)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6,
@@ -772,5 +795,4 @@ const styles = StyleSheet.create({
   },
 
   locationBtnWrap: { position: 'absolute', bottom: 108, right: 14 },
-  settingsBtnWrap: { position: 'absolute', bottom: 170, right: 14 },
 });
