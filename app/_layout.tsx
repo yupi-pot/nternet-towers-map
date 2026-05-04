@@ -20,6 +20,7 @@ import { PostHogProvider, usePostHog } from 'posthog-react-native';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { ADAPTY_PUBLIC_KEY } from '@/src/config/adapty';
+import { initAppsFlyer } from '@/src/config/appsflyer';
 import { PremiumProvider, usePremium } from '@/src/context/PremiumContext';
 import { POSTHOG_API_KEY, POSTHOG_HOST } from '@/src/config/posthog';
 
@@ -31,6 +32,8 @@ try {
 } catch (error) {
   console.error('Failed to activate Adapty SDK:', error);
 }
+
+initAppsFlyer();
 
 export {
   ErrorBoundary,

@@ -93,7 +93,8 @@
           }
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "react-native-appsflyer"
     ],
     "experiments": {
       "typedRoutes": true
