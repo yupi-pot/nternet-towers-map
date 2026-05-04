@@ -61,7 +61,19 @@
           "project": "cellr"
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "Cell Tower Map uses AppsFlyer to measure which ad or campaign brought you here, so we can improve the service. This choice does not affect tower data or any feature in the app."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#111827"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

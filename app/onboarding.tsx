@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -42,13 +44,16 @@ interface VideoPage {
   title: string;
 }
 
+type PermissionKind = 'tracking' | 'notifications' | 'location';
+
 interface IconPage {
   key: string;
   type: 'icon';
   icon: IoniconsName;
   title: string;
   body: string;
-  isPermission?: boolean;
+  permission?: PermissionKind;
+  buttonText?: string;
 }
 
 interface ImagePage {
@@ -67,6 +72,24 @@ const PAGES: Page[] = [
     key: 'intro',
     type: 'video',
     title: 'Cell Tower Map',
+  },
+  {
+    key: 'tracking',
+    type: 'icon',
+    icon: 'shield-checkmark-outline',
+    title: 'Help us measure\nwhat\'s working',
+    body: 'We use AppsFlyer to understand which ad or campaign brought you here, so we can keep improving the app. This is fully optional — declining won\'t affect any feature, and your tower data is never shared.',
+    permission: 'tracking',
+    buttonText: 'Continue',
+  },
+  {
+    key: 'notifications',
+    type: 'icon',
+    icon: 'notifications-outline',
+    title: 'Stay in the loop',
+    body: 'Get a heads-up when new towers appear in your area, when nearby coverage changes, or when there\'s an important service update. You can turn this off anytime in Settings.',
+    permission: 'notifications',
+    buttonText: 'Enable Notifications',
   },
   {
     key: 'database',
@@ -243,9 +266,39 @@ export default function OnboardingScreen() {
     router.replace('/(tabs)' as never);
   }, []);
 
+  const advance = useCallback(() => {
+    flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
+  }, [currentIndex]);
+
   const handleNext = () => {
     if (isLast) { finish(); return; }
-    flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
+    advance();
+  };
+
+  const handleRequestTracking = async () => {
+    try {
+      setRequesting(true);
+      await requestTrackingPermissionsAsync();
+    } catch {
+      // ignore — proceed regardless of outcome
+    } finally {
+      setRequesting(false);
+      advance();
+    }
+  };
+
+  const handleRequestNotifications = async () => {
+    try {
+      setRequesting(true);
+      await Notifications.requestPermissionsAsync({
+        ios: { allowAlert: true, allowBadge: true, allowSound: true },
+      });
+    } catch {
+      // ignore — proceed regardless of outcome
+    } finally {
+      setRequesting(false);
+      advance();
+    }
   };
 
   const handleRequestLocation = async () => {
@@ -278,6 +331,8 @@ export default function OnboardingScreen() {
   }).current;
 
   const currentPage = PAGES[currentIndex];
+  const currentPermission =
+    currentPage.type === 'icon' ? currentPage.permission : undefined;
 
   return (
     <View style={styles.container}>
@@ -323,6 +378,28 @@ export default function OnboardingScreen() {
           {isVideoSlide ? (
             <TouchableOpacity style={styles.videoNextBtn} onPress={handleNext} activeOpacity={0.85}>
               <Text style={styles.videoNextText}>Get Started →</Text>
+            </TouchableOpacity>
+          ) : currentPermission === 'tracking' ? (
+            <TouchableOpacity
+              style={styles.nextBtn}
+              onPress={handleRequestTracking}
+              disabled={requesting}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.nextText}>
+                {requesting ? 'Requesting…' : 'Continue →'}
+              </Text>
+            </TouchableOpacity>
+          ) : currentPermission === 'notifications' ? (
+            <TouchableOpacity
+              style={styles.nextBtn}
+              onPress={handleRequestNotifications}
+              disabled={requesting}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.nextText}>
+                {requesting ? 'Requesting…' : 'Enable Notifications →'}
+              </Text>
             </TouchableOpacity>
           ) : isLast ? (
             locationGranted ? (
