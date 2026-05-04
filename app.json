@@ -53,7 +53,12 @@
           "locationWhenInUsePermission": "Your location is used to find nearby cell towers, calculate distances, and show compass bearing for antenna alignment."
         }
       ],
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": false
+        }
+      ],
       [
         "@sentry/react-native",
         {
@@ -72,6 +77,20 @@
         "expo-notifications",
         {
           "color": "#111827"
+        }
+      ],
+      [
+        "react-native-adapty",
+        {
+          "replaceAndroidBackupConfig": true
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
         }
       ]
     ],

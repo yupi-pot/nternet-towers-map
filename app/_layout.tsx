@@ -7,11 +7,22 @@ import * as FileSystem from 'expo-file-system';
 import * as SecureStore from 'expo-secure-store';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
+import { adapty } from 'react-native-adapty';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { ADAPTY_PUBLIC_KEY } from '@/src/config/adapty';
 import { PremiumProvider } from '@/src/context/PremiumContext';
+
+try {
+  adapty.activate(ADAPTY_PUBLIC_KEY, {
+    logLevel: __DEV__ ? 'verbose' : 'error',
+    __ignoreActivationOnFastRefresh: __DEV__,
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+}
 
 export {
   ErrorBoundary,

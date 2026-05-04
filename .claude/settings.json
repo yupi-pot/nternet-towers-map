@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s https://adapty.io/docs/*)",
+      "Bash(curl -s -X POST https://hooks.slack.com/*)",
+      "Bash(curl -s -X POST https://api.airtable.com/*)"
+    ]
+  }
+}
