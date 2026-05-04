@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import TowerDetailModal from '@/src/components/TowerDetailModal';
 import { useTowersContext } from '@/src/context/TowersContext';
+import { scheduleReviewAfterFiltersUsed } from '@/src/utils/rateApp';
 import { getCarrierName } from '@/src/utils/carrierNames';
 import {
   bearingTo,
@@ -187,6 +188,7 @@ export default function ListTab() {
   const [selectedTower, setSelectedTower] = useState<CellTower | null>(null);
 
   const toggleFilter = (radio: CellTower['radio']) => {
+    void scheduleReviewAfterFiltersUsed();
     setActiveFilters((prev) => {
       const next = new Set(prev);
       if (next.has(radio)) { if (next.size > 1) next.delete(radio); }

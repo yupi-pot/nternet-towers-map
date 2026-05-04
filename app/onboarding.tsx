@@ -9,6 +9,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { presentPaywall } from '@/src/components/PaywallModal';
+import { requestReviewAfterPaywall } from '@/src/utils/rateApp';
 import {
   Dimensions,
   FlatList,
@@ -256,7 +257,12 @@ export default function OnboardingScreen() {
     router.replace('/(tabs)' as never);
     // Show paywall on top of the map after onboarding. Fire-and-forget —
     // failures or no-config paywalls just no-op so the user still lands on tabs.
-    presentPaywall().catch(() => {});
+    const promptRate = () => { void requestReviewAfterPaywall(); };
+    presentPaywall({
+      onClose: promptRate,
+      onPurchase: promptRate,
+      onRestore: promptRate,
+    }).catch(() => {});
   }, []);
 
   const advance = useCallback(() => {

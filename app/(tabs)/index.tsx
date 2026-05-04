@@ -35,6 +35,7 @@ import TowerDetailModal from '@/src/components/TowerDetailModal';
 import { TowerMarker, TOWER_MARKER_ANCHOR } from '@/src/components/TowerMarker';
 import { useTowersContext } from '@/src/context/TowersContext';
 import { CellTower, RADIO_COLORS } from '@/src/types';
+import { scheduleReviewAfterFiltersUsed } from '@/src/utils/rateApp';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -343,11 +344,13 @@ export default function MapTab() {
     setActiveFilters(next);
     if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
     filterTimerRef.current = setTimeout(() => setMapFilters(new Set(next)), 200);
+    void scheduleReviewAfterFiltersUsed();
   }, []);
 
   const handleAllChip = useCallback(() => applyFilters(new Set(ALL_RADIOS)), [applyFilters]);
 
   const toggleFilter = useCallback((radio: CellTower['radio']) => {
+    void scheduleReviewAfterFiltersUsed();
     setActiveFilters((prev) => {
       const allActive = prev.size === ALL_RADIOS.length;
       let next: Set<CellTower['radio']>;
