@@ -1,0 +1,4 @@
+{
+  "NSLocationWhenInUseUsageDescription": "La tua posizione viene usata per trovare le antenne cellulari nelle vicinanze, calcolare le distanze e mostrare l'azimut per orientare l'antenna.",
+  "NSUserTrackingUsageDescription": "Cell Tower Map usa AppsFlyer per misurare quale pubblicità o campagna ti ha portato qui, in modo da migliorare il servizio. Questa scelta non influisce sui dati delle antenne né su alcuna funzione dell'app."
+}

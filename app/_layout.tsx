@@ -23,6 +23,7 @@ import { ADAPTY_PUBLIC_KEY } from '@/src/config/adapty';
 import { initAppsFlyer } from '@/src/config/appsflyer';
 import { PremiumProvider, usePremium } from '@/src/context/PremiumContext';
 import { POSTHOG_API_KEY, POSTHOG_HOST } from '@/src/config/posthog';
+import '@/src/i18n';
 
 try {
   adapty.activate(ADAPTY_PUBLIC_KEY, {

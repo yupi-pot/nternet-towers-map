@@ -99,6 +99,17 @@
     "experiments": {
       "typedRoutes": true
     },
+    "locales": {
+      "ru": "./src/i18n/native/ru.json",
+      "es-MX": "./src/i18n/native/es-MX.json",
+      "pt-BR": "./src/i18n/native/pt-BR.json",
+      "de": "./src/i18n/native/de.json",
+      "fr": "./src/i18n/native/fr.json",
+      "it": "./src/i18n/native/it.json",
+      "sv": "./src/i18n/native/sv.json",
+      "pl": "./src/i18n/native/pl.json",
+      "nb": "./src/i18n/native/nb.json"
+    },
     "extra": {
       "eas": {
         "projectId": "421cf184-ce1f-4aad-a869-3094226103c2"

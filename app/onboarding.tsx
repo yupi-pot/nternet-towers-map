@@ -7,6 +7,8 @@ import * as SecureStore from 'expo-secure-store';
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { ParseKeys } from 'i18next';
+import { useTranslation } from 'react-i18next';
 
 import { presentPaywall } from '@/src/components/PaywallModal';
 import { requestReviewAfterPaywall } from '@/src/utils/rateApp';
@@ -44,7 +46,6 @@ type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 interface VideoPage {
   key: 'intro';
   type: 'video';
-  title: string;
 }
 
 type PermissionKind = 'tracking' | 'notifications' | 'location';
@@ -53,10 +54,9 @@ interface IconPage {
   key: string;
   type: 'icon';
   icon: IoniconsName;
-  title: string;
-  body: string;
+  titleKey: ParseKeys;
+  bodyKey: ParseKeys;
   permission?: PermissionKind;
-  buttonText?: string;
 }
 
 interface ImagePage {
@@ -64,10 +64,9 @@ interface ImagePage {
   type: 'image';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   image: any;
-  title: string;
-  body: string;
+  titleKey: ParseKeys;
+  bodyKey: ParseKeys;
   permission?: PermissionKind;
-  buttonText?: string;
 }
 
 type Page = VideoPage | IconPage | ImagePage;
@@ -76,43 +75,40 @@ const PAGES: Page[] = [
   {
     key: 'intro',
     type: 'video',
-    title: 'Cell Tower Map',
   },
   {
     key: 'database',
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-tower.jpg'),
-    title: 'Real towers. Verified locations',
-    body: 'Carrier coverage maps are guesswork — painted to look good, not to be accurate. Ours cross-references real tower registrations, confidence-rated and refreshed every few days.',
+    titleKey: 'onboarding.databaseTitle',
+    bodyKey: 'onboarding.databaseBody',
     permission: 'tracking',
-    buttonText: 'Continue',
   },
   {
     key: 'antenna',
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-antenna.jpg'),
-    title: 'Stop pointing your\nantenna blind',
-    body: 'Get the exact compass bearing to any tower. No guessing, no wasted install. Essential for signal boosters, rooftop antennas, and rural setups.',
+    titleKey: 'onboarding.antennaTitle',
+    bodyKey: 'onboarding.antennaBody',
     permission: 'notifications',
-    buttonText: 'Enable Notifications',
   },
   {
     key: 'terrain',
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-terrain.jpg'),
-    title: 'Hills block signal. We know that',
-    body: 'Most apps ignore elevation. Ours accounts for every hill and valley between you and the tower — so you see where signal actually reaches, not just the distance.',
+    titleKey: 'onboarding.terrainTitle',
+    bodyKey: 'onboarding.terrainBody',
   },
   {
     key: 'location',
     type: 'image',
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     image: require('../assets/images/onboarding-location.jpg'),
-    title: 'One permission,\nthen you\'re in',
-    body: 'Required to find towers near you and calculate distances. Your location is never stored or shared.',
+    titleKey: 'onboarding.locationTitle',
+    bodyKey: 'onboarding.locationBody',
   },
 ];
 
@@ -120,7 +116,8 @@ const PAGES: Page[] = [
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const VIDEO_SOURCE = require('../assets/onboarding.mov');
 
-function VideoSlide({ isActive, title }: { isActive: boolean; title: string }) {
+function VideoSlide({ isActive }: { isActive: boolean }) {
+  const { t } = useTranslation();
   const player = useVideoPlayer(VIDEO_SOURCE, (p) => {
     p.loop = true;
     p.muted = true;
@@ -130,8 +127,6 @@ function VideoSlide({ isActive, title }: { isActive: boolean; title: string }) {
     if (isActive) player.play();
     else player.pause();
   }, [isActive, player]);
-
-  const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.videoSlide, { width }]}>
@@ -155,16 +150,14 @@ function VideoSlide({ isActive, title }: { isActive: boolean; title: string }) {
         {/* Database badge */}
         <View style={styles.videoBadge}>
           <View style={styles.videoBadgeDot} />
-          <Text style={styles.videoBadgeText}>4.5M towers · updated 1 day ago</Text>
+          <Text style={styles.videoBadgeText}>{t('onboarding.videoBadge')}</Text>
         </View>
 
         {/* Main title */}
-        <Text style={styles.videoTitle}>{title}</Text>
+        <Text style={styles.videoTitle}>{t('onboarding.videoTitle')}</Text>
 
         {/* Subtitle / DB info */}
-        <Text style={styles.videoSubtitle}>
-          Real tower locations in 200+ countries{'\n'}Confidence-rated from real measurements
-        </Text>
+        <Text style={styles.videoSubtitle}>{t('onboarding.videoSubtitle')}</Text>
       </View>
     </View>
   );
@@ -199,6 +192,7 @@ function PageIcon({ icon, isActive }: { icon: IoniconsName; isActive: boolean })
 
 // ─── Icon slide ───────────────────────────────────────────────────────────────
 function IconSlide({ page, isActive }: { page: IconPage; isActive: boolean }) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.page, { width }]}>
       <View style={styles.iconArea}>
@@ -206,8 +200,8 @@ function IconSlide({ page, isActive }: { page: IconPage; isActive: boolean }) {
       </View>
       <View style={styles.divider} />
       <View style={styles.textArea}>
-        <Text style={styles.title}>{page.title}</Text>
-        <Text style={styles.body}>{page.body}</Text>
+        <Text style={styles.title}>{t(page.titleKey)}</Text>
+        <Text style={styles.body}>{t(page.bodyKey)}</Text>
       </View>
     </View>
   );
@@ -215,6 +209,7 @@ function IconSlide({ page, isActive }: { page: IconPage; isActive: boolean }) {
 
 // ─── Image slide ─────────────────────────────────────────────────────────────
 function ImageSlide({ page }: { page: ImagePage }) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.imagePage, { width }]}>
       {/* Image fills all space above the text block */}
@@ -233,8 +228,8 @@ function ImageSlide({ page }: { page: ImagePage }) {
       </View>
       {/* Text pinned to the bottom */}
       <View style={styles.imageTextArea}>
-        <Text style={styles.title}>{page.title}</Text>
-        <Text style={styles.body}>{page.body}</Text>
+        <Text style={styles.title}>{t(page.titleKey)}</Text>
+        <Text style={styles.body}>{t(page.bodyKey)}</Text>
       </View>
     </View>
   );
@@ -242,6 +237,7 @@ function ImageSlide({ page }: { page: ImagePage }) {
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function OnboardingScreen() {
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [locationGranted, setLocationGranted] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -352,7 +348,7 @@ export default function OnboardingScreen() {
         viewabilityConfig={viewabilityConfig}
         renderItem={({ item, index }) =>
           item.type === 'video' ? (
-            <VideoSlide isActive={index === currentIndex} title={item.title} />
+            <VideoSlide isActive={index === currentIndex} />
           ) : item.type === 'image' ? (
             <ImageSlide page={item} />
           ) : (
@@ -378,7 +374,7 @@ export default function OnboardingScreen() {
         <View>
           {isVideoSlide ? (
             <TouchableOpacity style={styles.videoNextBtn} onPress={handleNext} activeOpacity={0.85}>
-              <Text style={styles.videoNextText}>Get Started →</Text>
+              <Text style={styles.videoNextText}>{t('onboarding.videoCta')}</Text>
             </TouchableOpacity>
           ) : currentPermission === 'tracking' ? (
             <TouchableOpacity
@@ -388,7 +384,7 @@ export default function OnboardingScreen() {
               activeOpacity={0.85}
             >
               <Text style={styles.nextText}>
-                {requesting ? 'Requesting…' : 'Continue →'}
+                {requesting ? t('common.requesting') : t('onboarding.buttonContinue')}
               </Text>
             </TouchableOpacity>
           ) : currentPermission === 'notifications' ? (
@@ -399,13 +395,13 @@ export default function OnboardingScreen() {
               activeOpacity={0.85}
             >
               <Text style={styles.nextText}>
-                {requesting ? 'Requesting…' : 'Enable Notifications →'}
+                {requesting ? t('common.requesting') : t('onboarding.buttonEnableNotifications')}
               </Text>
             </TouchableOpacity>
           ) : isLast ? (
             locationGranted ? (
               <TouchableOpacity style={styles.nextBtn} onPress={finish} activeOpacity={0.85}>
-                <Text style={styles.nextText}>Done ✓</Text>
+                <Text style={styles.nextText}>{t('onboarding.buttonDone')}</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -415,13 +411,13 @@ export default function OnboardingScreen() {
                 activeOpacity={0.85}
               >
                 <Text style={styles.nextText}>
-                  {requesting ? 'Requesting…' : 'Allow Location →'}
+                  {requesting ? t('common.requesting') : t('onboarding.buttonAllowLocation')}
                 </Text>
               </TouchableOpacity>
             )
           ) : (
             <TouchableOpacity style={styles.nextBtn} onPress={handleNext} activeOpacity={0.85}>
-              <Text style={styles.nextText}>Next →</Text>
+              <Text style={styles.nextText}>{t('onboarding.buttonNext')}</Text>
             </TouchableOpacity>
           )}
         </View>

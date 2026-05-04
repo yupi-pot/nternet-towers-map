@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import TowerDetailModal from '@/src/components/TowerDetailModal';
 import { useTowersContext } from '@/src/context/TowersContext';
@@ -21,7 +22,7 @@ import { getCarrierName } from '@/src/utils/carrierNames';
 import {
   bearingTo,
   CONFIDENCE_COLOR,
-  CONFIDENCE_LABEL,
+  confidenceLabel,
   confidenceLevel,
   formatBearing,
   formatDistance,
@@ -69,6 +70,7 @@ function SignalBars({ conf, color }: { conf: 'high' | 'medium' | 'low'; color: s
 interface RowItem { tower: CellTower; dist: number | null; bearing: number | null }
 
 function NearestTowerCard({ item, onPress }: { item: RowItem; onPress: (t: CellTower) => void }) {
+  const { t } = useTranslation();
   const { tower, dist, bearing } = item;
   const color = RADIO_COLORS[tower.radio];
   const carrier = getCarrierName(tower.mcc, tower.mnc);
@@ -105,14 +107,14 @@ function NearestTowerCard({ item, onPress }: { item: RowItem; onPress: (t: CellT
 
         {/* Detail grid */}
         <View style={styles.heroGrid}>
-          <HeroCell label="Cell ID" value={String(tower.cellid)} />
-          {enodebId != null && <HeroCell label="eNodeB" value={String(enodebId)} />}
-          <HeroCell label="MCC / MNC" value={`${tower.mcc} / ${tower.mnc}`} />
-          <HeroCell label="LAC" value={String(tower.lac)} />
-          <HeroCell label="Coverage" value={`~${tower.range.toLocaleString()} m`} />
-          <HeroCell label="Measurements" value={tower.samples.toLocaleString()} />
+          <HeroCell label={t('tower.cellId')} value={String(tower.cellid)} />
+          {enodebId != null && <HeroCell label={t('tower.eNodeB')} value={String(enodebId)} />}
+          <HeroCell label={t('tower.mccMnc')} value={`${tower.mcc} / ${tower.mnc}`} />
+          <HeroCell label={t('tower.lac')} value={String(tower.lac)} />
+          <HeroCell label={t('tower.coverageRadius')} value={`~${tower.range.toLocaleString()} ${t('units.m')}`} />
+          <HeroCell label={t('tower.measurements')} value={tower.samples.toLocaleString()} />
           {tower.averageSignalStrength !== 0 && (
-            <HeroCell label="Avg signal" value={`${tower.averageSignalStrength} dBm`} />
+            <HeroCell label={t('tower.avgSignal')} value={`${tower.averageSignalStrength} dBm`} />
           )}
         </View>
 
@@ -121,7 +123,7 @@ function NearestTowerCard({ item, onPress }: { item: RowItem; onPress: (t: CellT
           <View style={[styles.confPill, { backgroundColor: CONFIDENCE_COLOR[conf] + '18' }]}>
             <View style={[styles.confDot, { backgroundColor: CONFIDENCE_COLOR[conf] }]} />
             <Text style={[styles.confLabel, { color: CONFIDENCE_COLOR[conf] }]}>
-              {CONFIDENCE_LABEL[conf]} confidence
+              {t('tower.confidenceFull', { level: confidenceLabel(conf) })}
             </Text>
           </View>
           <SignalBars conf={conf} color={color} />
@@ -142,6 +144,7 @@ function HeroCell({ label, value }: { label: string; value: string }) {
 
 // ─── Regular tower row ────────────────────────────────────────────────────────
 function TowerRow({ item, onPress }: { item: RowItem; onPress: (t: CellTower) => void }) {
+  const { t } = useTranslation();
   const { tower, dist } = item;
   const color = RADIO_COLORS[tower.radio];
   const carrier = getCarrierName(tower.mcc, tower.mnc);
@@ -160,7 +163,7 @@ function TowerRow({ item, onPress }: { item: RowItem; onPress: (t: CellTower) =>
       <View style={styles.rowBody}>
         <Text style={styles.carrierName} numberOfLines={1}>{carrier}</Text>
         <Text style={styles.rowSub}>
-          Cell {tower.cellid}{tower.range > 0 ? `  ·  ~${tower.range} m` : ''}
+          {t('list.cellPrefix')} {tower.cellid}{tower.range > 0 ? `  ·  ~${tower.range} ${t('units.m')}` : ''}
         </Text>
       </View>
 
@@ -178,6 +181,7 @@ const Separator = () => <View style={styles.separator} />;
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function ListTab() {
+  const { t } = useTranslation();
   const { towers, isLoading, error, location } = useTowersContext();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -223,11 +227,11 @@ export default function ListTab() {
 
   const listHeader = nearest ? (
     <View>
-      <Text style={styles.sectionLabel}>Nearest Tower</Text>
-      <NearestTowerCard item={nearest} onPress={(t) => setSelectedTower(t)} />
+      <Text style={styles.sectionLabel}>{t('list.nearestTower')}</Text>
+      <NearestTowerCard item={nearest} onPress={(tower) => setSelectedTower(tower)} />
       {listRows.length > 0 && (
         <Text style={[styles.sectionLabel, { marginTop: 24 }]}>
-          Nearby  ·  {listRows.length}
+          {t('list.nearby', { count: listRows.length })}
         </Text>
       )}
     </View>
@@ -238,7 +242,7 @@ export default function ListTab() {
       {/* ── White header ── */}
       <WhiteHeader paddingTop={insets.top}>
         <View style={styles.titleRow}>
-          <Text style={styles.largeTitle}>Towers </Text>
+          <Text style={styles.largeTitle}>{t('list.title')} </Text>
           <Text style={styles.largeCount}>
             {isLoading ? '…' : totalFiltered}
           </Text>
@@ -301,8 +305,8 @@ export default function ListTab() {
       ) : towers.length === 0 ? (
         <View style={styles.centered}>
           <Ionicons name="cellular-outline" size={40} color="#d1d5db" />
-          <Text style={styles.emptyTitle}>{error ?? 'No towers loaded'}</Text>
-          <Text style={styles.emptyHint}>Open the Map tab and pan to an area</Text>
+          <Text style={styles.emptyTitle}>{error ?? t('errors.noTowersLoaded')}</Text>
+          <Text style={styles.emptyHint}>{t('list.emptyHint')}</Text>
         </View>
       ) : (
         <FlatList
@@ -310,7 +314,7 @@ export default function ListTab() {
           keyExtractor={(item) =>
             `${item.tower.mcc}-${item.tower.mnc}-${item.tower.lac}-${item.tower.cellid}`
           }
-          renderItem={({ item }) => <TowerRow item={item} onPress={(t) => setSelectedTower(t)} />}
+          renderItem={({ item }) => <TowerRow item={item} onPress={(tower) => setSelectedTower(tower)} />}
           ItemSeparatorComponent={Separator}
           ListHeaderComponent={listHeader}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 80 }]}

@@ -1,3 +1,5 @@
+import i18n, { getUnitSystem } from '@/src/i18n';
+
 // ─── Distance ────────────────────────────────────────────────────────────────
 
 /** Haversine distance in meters between two lat/lon points. */
@@ -16,10 +18,18 @@ export function haversineDistance(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** Format meters as human-readable distance string. */
+const METERS_PER_FOOT = 0.3048;
+const METERS_PER_MILE = 1609.344;
+
+/** Format meters as a human-readable distance string in the device's unit system. */
 export function formatDistance(meters: number): string {
-  if (meters < 1000) return `${Math.round(meters)} m`;
-  return `${(meters / 1000).toFixed(1)} km`;
+  if (getUnitSystem() === 'imperial') {
+    const feet = meters / METERS_PER_FOOT;
+    if (feet < 1000) return `${Math.round(feet)} ${i18n.t('units.ft')}`;
+    return `${(meters / METERS_PER_MILE).toFixed(1)} ${i18n.t('units.mi')}`;
+  }
+  if (meters < 1000) return `${Math.round(meters)} ${i18n.t('units.m')}`;
+  return `${(meters / 1000).toFixed(1)} ${i18n.t('units.km')}`;
 }
 
 // ─── Bearing ─────────────────────────────────────────────────────────────────
@@ -75,11 +85,10 @@ export const CONFIDENCE_COLOR: Record<ConfidenceLevel, string> = {
   low: '#ef4444',
 };
 
-export const CONFIDENCE_LABEL: Record<ConfidenceLevel, string> = {
-  high: 'High',
-  medium: 'Medium',
-  low: 'Low',
-};
+/** Localized label for a confidence level. Re-evaluated on every call so it tracks language changes. */
+export function confidenceLabel(level: ConfidenceLevel): string {
+  return i18n.t(`confidence.${level}`);
+}
 
 // ─── Tower limit (free vs premium) ───────────────────────────────────────────
 

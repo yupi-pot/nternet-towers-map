@@ -1,0 +1,4 @@
+{
+  "NSLocationWhenInUseUsageDescription": "Dein Standort wird verwendet, um Mobilfunkmasten in der Nähe zu finden, Entfernungen zu berechnen und die Peilung zur Antennen-Ausrichtung anzuzeigen.",
+  "NSUserTrackingUsageDescription": "Cell Tower Map nutzt AppsFlyer, um zu messen, über welche Werbung oder Kampagne du hierhergekommen bist, damit wir den Dienst verbessern können. Diese Wahl beeinflusst weder die Mast-Daten noch eine Funktion der App."
+}

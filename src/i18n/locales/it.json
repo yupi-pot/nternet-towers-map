@@ -1,0 +1,98 @@
+{
+  "common": {
+    "ok": "OK",
+    "copy": "Copia",
+    "requesting": "Richiesta in corso…"
+  },
+  "onboarding": {
+    "videoBadge": "4,5 mln di antenne · aggiornato ieri",
+    "videoTitle": "Mappa delle antenne",
+    "videoSubtitle": "Posizioni reali di antenne in oltre 200 paesi\nValutate in affidabilità da misurazioni reali",
+    "videoCta": "Inizia →",
+    "databaseTitle": "Antenne vere. Posizioni verificate",
+    "databaseBody": "Le mappe di copertura degli operatori sono stime — belle da vedere, non precise. La nostra incrocia le registrazioni reali delle antenne, valutate in affidabilità e aggiornate ogni pochi giorni.",
+    "antennaTitle": "Smettila di puntare\nl'antenna alla cieca",
+    "antennaBody": "Ottieni l'azimut esatto verso qualsiasi antenna. Niente più tentativi, niente installazioni sprecate. Essenziale per amplificatori di segnale, antenne sul tetto e installazioni rurali.",
+    "terrainTitle": "Le colline bloccano il segnale. Lo sappiamo",
+    "terrainBody": "La maggior parte delle app ignora l'altimetria. La nostra tiene conto di ogni collina e valle tra te e l'antenna — così vedi dove il segnale arriva davvero, non solo la distanza.",
+    "locationTitle": "Un permesso,\ne sei dentro",
+    "locationBody": "Serve a trovare le antenne vicine e calcolare le distanze. La tua posizione non viene mai memorizzata né condivisa.",
+    "buttonContinue": "Continua →",
+    "buttonEnableNotifications": "Attiva le notifiche →",
+    "buttonAllowLocation": "Consenti posizione →",
+    "buttonNext": "Avanti →",
+    "buttonDone": "Fatto ✓"
+  },
+  "map": {
+    "foundPrefix": "Trovate",
+    "foundSuffix": "antenne",
+    "filterAll": "Tutte"
+  },
+  "list": {
+    "title": "Antenne",
+    "nearestTower": "Antenna più vicina",
+    "nearby": "Nelle vicinanze  ·  {{count}}",
+    "emptyTitle": "Nessuna antenna caricata",
+    "emptyHint": "Apri la scheda Mappa e spostati su un'area",
+    "cellPrefix": "Cella"
+  },
+  "tower": {
+    "distance": "Distanza",
+    "direction": "Direzione",
+    "confidenceTitle": "Affidabilità",
+    "confidenceBody": "Basata sul numero di misurazioni indipendenti per questa antenna.\n\n• Alta — 10+ misurazioni\n• Media — 3–9 misurazioni\n• Bassa — 1–2 misurazioni\n\nPiù misurazioni da dispositivi diversi significano una posizione più precisa.",
+    "confidenceBadge": "Affidabilità · {{level}}",
+    "confidenceFull": "Affidabilità {{level}}",
+    "cellId": "ID cella",
+    "eNodeB": "eNodeB",
+    "mccMnc": "MCC / MNC",
+    "lac": "LAC",
+    "coordinates": "Coordinate",
+    "coverageRadius": "Raggio di copertura",
+    "measurements": "Misurazioni",
+    "avgSignal": "Segnale medio",
+    "flagInaccurate": "⚑ Segnala imprecisione",
+    "reported": "Segnalato",
+    "export": "↑ Esporta",
+    "thanksTitle": "Grazie!",
+    "thanksBody": "La tua segnalazione aiuta a migliorare la precisione delle antenne per tutti."
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "sectionAbout": "Informazioni",
+    "sectionPreferences": "Preferenze",
+    "sectionSupport": "Supporto",
+    "privacyPolicy": "Informativa sulla privacy",
+    "termsOfUse": "Termini d'uso",
+    "language": "Lingua",
+    "languageSystem": "Sistema",
+    "contactUs": "Contattaci",
+    "copied": "Copiato",
+    "languagePickerTitle": "Lingua",
+    "languagePickerSystemOption": "Usa la lingua del dispositivo"
+  },
+  "tabs": {
+    "map": "Mappa",
+    "list": "Elenco"
+  },
+  "errors": {
+    "somethingWentWrong": "Qualcosa è andato storto",
+    "mapEncounteredError": "La mappa ha riscontrato un errore.",
+    "tryAgain": "Riprova",
+    "noTowersLoaded": "Nessuna antenna caricata",
+    "noTowersFound": "Nessuna antenna trovata",
+    "failedToLoadTowers": "Impossibile caricare le antenne",
+    "failedToGetLocation": "Impossibile ottenere la posizione"
+  },
+  "units": {
+    "m": "m",
+    "km": "km",
+    "ft": "ft",
+    "mi": "mi"
+  },
+  "confidence": {
+    "high": "Alta",
+    "medium": "Media",
+    "low": "Bassa"
+  }
+}

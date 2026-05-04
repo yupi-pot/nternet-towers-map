@@ -5,6 +5,7 @@ import { Stack, useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Linking,
   Platform,
@@ -15,6 +16,14 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import LanguagePickerModal from '@/src/components/LanguagePickerModal';
+import {
+  getStoredLanguage,
+  LanguageCode,
+  setAppLanguage,
+  SUPPORTED_LANGUAGES,
+} from '@/src/i18n';
 
 const PRIVACY_URL = 'https://www.aigma.co/p/688f0dc';
 const TERMS_URL = 'https://www.aigma.co/p/3a9cdad';
@@ -45,9 +54,12 @@ async function getOrCreateUserId(): Promise<string> {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [userId, setUserId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [storedLang, setStoredLang] = useState<LanguageCode | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const appVersion = Constants.expoConfig?.version ?? '1.0.0';
   const buildNumber =
@@ -58,12 +70,11 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     getOrCreateUserId().then(setUserId);
+    getStoredLanguage().then(setStoredLang);
   }, []);
 
   const openURL = (url: string) =>
     WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url));
-
-  const openLanguageSettings = () => Linking.openSettings();
 
   const openSupportEmail = () => {
     const subject = `Cellr support — v${appVersion}`;
@@ -85,13 +96,23 @@ export default function SettingsScreen() {
     setTimeout(() => setCopied(false), 1400);
   };
 
+  const handleLanguageSelect = async (code: LanguageCode | null) => {
+    setPickerOpen(false);
+    setStoredLang(code);
+    await setAppLanguage(code);
+  };
+
+  const languageValue = storedLang
+    ? SUPPORTED_LANGUAGES.find((l) => l.code === storedLang)?.native ?? storedLang
+    : t('settings.languageSystem');
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Header — matches Map/List large title */}
       <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
-        <Text style={styles.largeTitle}>Settings</Text>
+        <Text style={styles.largeTitle}>{t('settings.title')}</Text>
         <View style={{ flex: 1 }} />
         <TouchableOpacity
           onPress={() => router.back()}
@@ -110,41 +131,41 @@ export default function SettingsScreen() {
         ]}
       >
         {/* About */}
-        <Text style={styles.sectionLabel}>About</Text>
+        <Text style={styles.sectionLabel}>{t('settings.sectionAbout')}</Text>
         <View style={styles.group}>
           <Row
             icon="lock-closed-outline"
-            label="Privacy Policy"
+            label={t('settings.privacyPolicy')}
             onPress={() => openURL(PRIVACY_URL)}
             showChevron
           />
           <Separator />
           <Row
             icon="document-text-outline"
-            label="Terms of Use"
+            label={t('settings.termsOfUse')}
             onPress={() => openURL(TERMS_URL)}
             showChevron
           />
         </View>
 
         {/* Preferences */}
-        <Text style={styles.sectionLabel}>Preferences</Text>
+        <Text style={styles.sectionLabel}>{t('settings.sectionPreferences')}</Text>
         <View style={styles.group}>
           <Row
             icon="globe-outline"
-            label="Language"
-            value="System"
-            onPress={openLanguageSettings}
+            label={t('settings.language')}
+            value={languageValue}
+            onPress={() => setPickerOpen(true)}
             showChevron
           />
         </View>
 
         {/* Support */}
-        <Text style={styles.sectionLabel}>Support</Text>
+        <Text style={styles.sectionLabel}>{t('settings.sectionSupport')}</Text>
         <View style={styles.group}>
           <Row
             icon="mail-outline"
-            label="Contact Us"
+            label={t('settings.contactUs')}
             onPress={openSupportEmail}
             showChevron
           />
@@ -158,10 +179,17 @@ export default function SettingsScreen() {
         >
           <Text style={styles.footerText}>Cellr v{appVersion}</Text>
           <Text style={styles.footerText} selectable>
-            {copied ? 'Copied' : userId ?? '…'}
+            {copied ? t('settings.copied') : userId ?? '…'}
           </Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <LanguagePickerModal
+        visible={pickerOpen}
+        selected={storedLang}
+        onClose={() => setPickerOpen(false)}
+        onSelect={handleLanguageSelect}
+      />
     </View>
   );
 }

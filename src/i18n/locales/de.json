@@ -1,0 +1,98 @@
+{
+  "common": {
+    "ok": "OK",
+    "copy": "Kopieren",
+    "requesting": "Wird angefragt…"
+  },
+  "onboarding": {
+    "videoBadge": "4,5 Mio. Masten · gestern aktualisiert",
+    "videoTitle": "Mobilfunkmasten-Karte",
+    "videoSubtitle": "Echte Standorte in über 200 Ländern\nVertrauensgrad aus echten Messungen",
+    "videoCta": "Loslegen →",
+    "databaseTitle": "Echte Masten. Geprüfte Standorte",
+    "databaseBody": "Netzabdeckungskarten der Anbieter sind Schätzwerte — schön gemalt, aber nicht genau. Unsere gleicht echte Mast-Registrierungen ab, bewertet sie nach Vertrauen und aktualisiert sich alle paar Tage.",
+    "antennaTitle": "Hör auf, deine Antenne\nblind auszurichten",
+    "antennaBody": "Erhalte die exakte Peilung zu jedem Mast. Kein Raten, keine vergebliche Installation. Unverzichtbar für Signalverstärker, Dachantennen und ländliche Aufbauten.",
+    "terrainTitle": "Hügel blockieren Signale. Wir wissen das",
+    "terrainBody": "Die meisten Apps ignorieren das Gelände. Unsere berücksichtigt jeden Hügel und jedes Tal zwischen dir und dem Mast — so siehst du, wo das Signal wirklich ankommt, nicht nur die Entfernung.",
+    "locationTitle": "Eine Berechtigung,\nund du bist drin",
+    "locationBody": "Wird benötigt, um Masten in deiner Nähe zu finden und Entfernungen zu berechnen. Dein Standort wird nie gespeichert oder weitergegeben.",
+    "buttonContinue": "Weiter →",
+    "buttonEnableNotifications": "Mitteilungen aktivieren →",
+    "buttonAllowLocation": "Standort erlauben →",
+    "buttonNext": "Weiter →",
+    "buttonDone": "Fertig ✓"
+  },
+  "map": {
+    "foundPrefix": "Gefunden",
+    "foundSuffix": "Masten",
+    "filterAll": "Alle"
+  },
+  "list": {
+    "title": "Masten",
+    "nearestTower": "Nächster Mast",
+    "nearby": "In der Nähe  ·  {{count}}",
+    "emptyTitle": "Keine Masten geladen",
+    "emptyHint": "Öffne den Karten-Tab und schwenke zu einem Bereich",
+    "cellPrefix": "Zelle"
+  },
+  "tower": {
+    "distance": "Entfernung",
+    "direction": "Richtung",
+    "confidenceTitle": "Vertrauen",
+    "confidenceBody": "Basiert auf der Anzahl unabhängiger Messungen für diesen Mast.\n\n• Hoch — 10+ Messungen\n• Mittel — 3–9 Messungen\n• Niedrig — 1–2 Messungen\n\nMehr Messungen von verschiedenen Geräten bedeuten einen genaueren Standort.",
+    "confidenceBadge": "Vertrauen · {{level}}",
+    "confidenceFull": "Vertrauen {{level}}",
+    "cellId": "Zell-ID",
+    "eNodeB": "eNodeB",
+    "mccMnc": "MCC / MNC",
+    "lac": "LAC",
+    "coordinates": "Koordinaten",
+    "coverageRadius": "Abdeckungsradius",
+    "measurements": "Messungen",
+    "avgSignal": "Ø Signal",
+    "flagInaccurate": "⚑ Ungenauigkeit melden",
+    "reported": "Gemeldet",
+    "export": "↑ Exportieren",
+    "thanksTitle": "Danke!",
+    "thanksBody": "Deine Meldung hilft, die Genauigkeit der Masten für alle zu verbessern."
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "sectionAbout": "Über",
+    "sectionPreferences": "Einstellungen",
+    "sectionSupport": "Support",
+    "privacyPolicy": "Datenschutzrichtlinie",
+    "termsOfUse": "Nutzungsbedingungen",
+    "language": "Sprache",
+    "languageSystem": "System",
+    "contactUs": "Kontakt",
+    "copied": "Kopiert",
+    "languagePickerTitle": "Sprache",
+    "languagePickerSystemOption": "Gerätesprache verwenden"
+  },
+  "tabs": {
+    "map": "Karte",
+    "list": "Liste"
+  },
+  "errors": {
+    "somethingWentWrong": "Etwas ist schiefgelaufen",
+    "mapEncounteredError": "Bei der Karte ist ein Fehler aufgetreten.",
+    "tryAgain": "Erneut versuchen",
+    "noTowersLoaded": "Keine Masten geladen",
+    "noTowersFound": "Keine Masten gefunden",
+    "failedToLoadTowers": "Masten konnten nicht geladen werden",
+    "failedToGetLocation": "Standort konnte nicht ermittelt werden"
+  },
+  "units": {
+    "m": "m",
+    "km": "km",
+    "ft": "ft",
+    "mi": "mi"
+  },
+  "confidence": {
+    "high": "Hoch",
+    "medium": "Mittel",
+    "low": "Niedrig"
+  }
+}

@@ -24,12 +24,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { getCarrierName } from '@/src/utils/carrierNames';
 import {
   bearingTo,
   CONFIDENCE_COLOR,
-  CONFIDENCE_LABEL,
+  confidenceLabel,
   confidenceLevel,
   formatBearing,
   formatDistance,
@@ -48,6 +49,7 @@ interface Props {
 }
 
 export default function TowerDetailModal({ tower, userLat, userLon, onClose, onFlagInaccurate }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const deviceHeading = useCompass();
   const [flagged, setFlagged] = useState(false);
@@ -133,7 +135,7 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
     if (flagged) return;
     setFlagged(true);
     onFlagInaccurate?.(tower);
-    Alert.alert('Thanks!', 'Your report helps improve tower accuracy for everyone.');
+    Alert.alert(t('tower.thanksTitle'), t('tower.thanksBody'));
   };
 
   return (
@@ -162,15 +164,15 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
             <TouchableOpacity
               style={[styles.confBadge, { borderColor: CONFIDENCE_COLOR[conf] }]}
               onPress={() => Alert.alert(
-                'Confidence',
-                'Based on the number of independent measurements for this tower.\n\n• High — 10+ measurements\n• Medium — 3–9 measurements\n• Low — 1–2 measurements\n\nMore measurements from different devices mean a more accurate location.',
-                [{ text: 'OK' }],
+                t('tower.confidenceTitle'),
+                t('tower.confidenceBody'),
+                [{ text: t('common.ok') }],
               )}
               activeOpacity={0.7}
             >
               <View style={[styles.confDot, { backgroundColor: CONFIDENCE_COLOR[conf] }]} />
               <Text style={[styles.confText, { color: CONFIDENCE_COLOR[conf] }]}>
-                Confidence · {CONFIDENCE_LABEL[conf]}
+                {t('tower.confidenceBadge', { level: confidenceLabel(conf) })}
               </Text>
               <Text style={[styles.confInfo, { color: CONFIDENCE_COLOR[conf] }]}>ⓘ</Text>
             </TouchableOpacity>
@@ -184,12 +186,12 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
           {hasLocation && distance != null && towerBearing != null && (
             <View style={styles.bearingRow}>
               <View style={styles.bearingItem}>
-                <Text style={styles.bearingLabel}>Distance</Text>
+                <Text style={styles.bearingLabel}>{t('tower.distance')}</Text>
                 <Text style={styles.bearingValue}>{formatDistance(distance)}</Text>
               </View>
               <View style={styles.bearingDivider} />
               <View style={styles.bearingItem}>
-                <Text style={styles.bearingLabel}>Direction</Text>
+                <Text style={styles.bearingLabel}>{t('tower.direction')}</Text>
                 <View style={styles.compassWrap}>
                   <Text style={styles.bearingValue}>{formatBearing(towerBearing)}</Text>
                   {arrowRotation != null && (
@@ -205,23 +207,23 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
           {/* Detail rows */}
           <View style={styles.contentBlock}>
             <View style={styles.details}>
-              <InfoRow label="Cell ID" value={String(tower.cellid)} />
+              <InfoRow label={t('tower.cellId')} value={String(tower.cellid)} />
               {enodebId != null && (
-                <InfoRow label="eNodeB" value={String(enodebId)} />
+                <InfoRow label={t('tower.eNodeB')} value={String(enodebId)} />
               )}
-              <InfoRow label="MCC / MNC" value={`${tower.mcc} / ${tower.mnc}`} />
-              <InfoRow label="LAC" value={String(tower.lac)} />
+              <InfoRow label={t('tower.mccMnc')} value={`${tower.mcc} / ${tower.mnc}`} />
+              <InfoRow label={t('tower.lac')} value={String(tower.lac)} />
               <TouchableOpacity onPress={handleCopyCoords}>
                 <InfoRow
-                  label="Coordinates"
+                  label={t('tower.coordinates')}
                   value={`${tower.lat.toFixed(5)}, ${tower.lon.toFixed(5)}`}
-                  action="Copy"
+                  action={t('common.copy')}
                 />
               </TouchableOpacity>
-              <InfoRow label="Coverage radius" value={`~${tower.range.toLocaleString()} m`} />
-              <InfoRow label="Measurements" value={`${tower.samples.toLocaleString()}`} />
+              <InfoRow label={t('tower.coverageRadius')} value={`~${tower.range.toLocaleString()} ${t('units.m')}`} />
+              <InfoRow label={t('tower.measurements')} value={`${tower.samples.toLocaleString()}`} />
               {tower.averageSignalStrength !== 0 && (
-                <InfoRow label="Avg signal" value={`${tower.averageSignalStrength} dBm`} />
+                <InfoRow label={t('tower.avgSignal')} value={`${tower.averageSignalStrength} dBm`} />
               )}
             </View>
           </View>
@@ -233,12 +235,12 @@ export default function TowerDetailModal({ tower, userLat, userLon, onClose, onF
               onPress={handleFlag}
             >
               <Text style={[styles.actionBtnText, flagged && styles.actionBtnTextDisabled]}>
-                {flagged ? 'Reported' : '⚑ Flag inaccurate'}
+                {flagged ? t('tower.reported') : t('tower.flagInaccurate')}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.actionBtn, styles.actionBtnPrimary]} onPress={handleExport}>
-              <Text style={styles.actionBtnTextPrimary}>↑ Export</Text>
+              <Text style={styles.actionBtnTextPrimary}>{t('tower.export')}</Text>
             </TouchableOpacity>
           </View>
           </Animated.View>

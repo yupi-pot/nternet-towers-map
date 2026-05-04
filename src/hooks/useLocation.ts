@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import * as Location from 'expo-location';
+import i18n from '@/src/i18n';
 import { UserLocation } from '../types';
 
 interface UseLocationResult {
@@ -51,7 +52,7 @@ export function useLocation(): UseLocationResult {
       );
     } catch (error) {
       console.error('[useLocation]', error);
-      setErrorMsg('Failed to get location');
+      setErrorMsg(i18n.t('errors.failedToGetLocation'));
       setIsLoading(false);
     }
   }

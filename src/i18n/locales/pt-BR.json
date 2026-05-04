@@ -1,0 +1,98 @@
+{
+  "common": {
+    "ok": "OK",
+    "copy": "Copiar",
+    "requesting": "Solicitando…"
+  },
+  "onboarding": {
+    "videoBadge": "4,5M torres · atualizado ontem",
+    "videoTitle": "Mapa de Torres Celulares",
+    "videoSubtitle": "Localizações reais de torres em mais de 200 países\nAvaliadas por confiança a partir de medições reais",
+    "videoCta": "Começar →",
+    "databaseTitle": "Torres reais. Localizações verificadas",
+    "databaseBody": "Mapas de cobertura das operadoras são chute — pintados para parecer bons, não para serem precisos. O nosso cruza registros reais de torres, classificados por confiança e atualizados a cada poucos dias.",
+    "antennaTitle": "Pare de apontar sua\nantena no escuro",
+    "antennaBody": "Saiba o azimute exato para qualquer torre. Sem chute, sem instalação desperdiçada. Essencial para amplificadores de sinal, antenas de telhado e instalações rurais.",
+    "terrainTitle": "Morros bloqueiam o sinal. A gente sabe disso",
+    "terrainBody": "A maioria dos apps ignora o relevo. O nosso considera cada morro e vale entre você e a torre — então você vê até onde o sinal realmente chega, não só a distância.",
+    "locationTitle": "Uma permissão,\ne pronto",
+    "locationBody": "Necessária para encontrar torres por perto e calcular distâncias. Sua localização nunca é armazenada nem compartilhada.",
+    "buttonContinue": "Continuar →",
+    "buttonEnableNotifications": "Ativar notificações →",
+    "buttonAllowLocation": "Permitir localização →",
+    "buttonNext": "Próximo →",
+    "buttonDone": "Concluído ✓"
+  },
+  "map": {
+    "foundPrefix": "Encontradas",
+    "foundSuffix": "torres",
+    "filterAll": "Todas"
+  },
+  "list": {
+    "title": "Torres",
+    "nearestTower": "Torre mais próxima",
+    "nearby": "Próximas  ·  {{count}}",
+    "emptyTitle": "Nenhuma torre carregada",
+    "emptyHint": "Abra a aba Mapa e arraste até uma área",
+    "cellPrefix": "Célula"
+  },
+  "tower": {
+    "distance": "Distância",
+    "direction": "Direção",
+    "confidenceTitle": "Confiança",
+    "confidenceBody": "Baseada no número de medições independentes para esta torre.\n\n• Alta — 10+ medições\n• Média — 3–9 medições\n• Baixa — 1–2 medições\n\nMais medições de dispositivos diferentes significam uma localização mais precisa.",
+    "confidenceBadge": "Confiança · {{level}}",
+    "confidenceFull": "Confiança {{level}}",
+    "cellId": "ID da célula",
+    "eNodeB": "eNodeB",
+    "mccMnc": "MCC / MNC",
+    "lac": "LAC",
+    "coordinates": "Coordenadas",
+    "coverageRadius": "Raio de cobertura",
+    "measurements": "Medições",
+    "avgSignal": "Sinal méd.",
+    "flagInaccurate": "⚑ Reportar imprecisão",
+    "reported": "Reportado",
+    "export": "↑ Exportar",
+    "thanksTitle": "Obrigado!",
+    "thanksBody": "Seu reporte ajuda a melhorar a precisão das torres para todos."
+  },
+  "settings": {
+    "title": "Configurações",
+    "sectionAbout": "Sobre",
+    "sectionPreferences": "Preferências",
+    "sectionSupport": "Suporte",
+    "privacyPolicy": "Política de Privacidade",
+    "termsOfUse": "Termos de Uso",
+    "language": "Idioma",
+    "languageSystem": "Sistema",
+    "contactUs": "Fale conosco",
+    "copied": "Copiado",
+    "languagePickerTitle": "Idioma",
+    "languagePickerSystemOption": "Usar idioma do dispositivo"
+  },
+  "tabs": {
+    "map": "Mapa",
+    "list": "Lista"
+  },
+  "errors": {
+    "somethingWentWrong": "Algo deu errado",
+    "mapEncounteredError": "O mapa encontrou um erro.",
+    "tryAgain": "Tentar de novo",
+    "noTowersLoaded": "Nenhuma torre carregada",
+    "noTowersFound": "Nenhuma torre encontrada",
+    "failedToLoadTowers": "Falha ao carregar as torres",
+    "failedToGetLocation": "Falha ao obter a localização"
+  },
+  "units": {
+    "m": "m",
+    "km": "km",
+    "ft": "ft",
+    "mi": "mi"
+  },
+  "confidence": {
+    "high": "Alta",
+    "medium": "Média",
+    "low": "Baixa"
+  }
+}

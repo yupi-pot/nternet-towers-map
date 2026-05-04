@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import i18n from '@/src/i18n';
 import { CellTower } from '../types';
 import { ViewportBBox } from '../api/opencellid';
 import { fetchTowersFromSupabase } from '../api/supabase';
@@ -78,7 +79,7 @@ export function useTowers(
         );
 
         if (visible.length === 0) {
-          setError('No towers found');
+          setError(i18n.t('errors.noTowersFound'));
           setTowers([]);
         } else {
           setError(null);
@@ -90,7 +91,7 @@ export function useTowers(
       } catch (err: unknown) {
         // Ignore aborted requests — a newer fetch is already in flight
         if (err instanceof Error && err.name === 'AbortError') return;
-        setError('Failed to load towers');
+        setError(i18n.t('errors.failedToLoadTowers'));
         setTowers([]);
       } finally {
         setIsLoading(false);

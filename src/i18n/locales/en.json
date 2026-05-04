@@ -1,0 +1,98 @@
+{
+  "common": {
+    "ok": "OK",
+    "copy": "Copy",
+    "requesting": "Requesting…"
+  },
+  "onboarding": {
+    "videoBadge": "4.5M towers · updated yesterday",
+    "videoTitle": "Cell Tower Map",
+    "videoSubtitle": "Real tower locations in 200+ countries\nConfidence-rated from real measurements",
+    "videoCta": "Get Started →",
+    "databaseTitle": "Real towers. Verified locations",
+    "databaseBody": "Carrier coverage maps are guesswork — painted to look good, not to be accurate. Ours cross-references real tower registrations, confidence-rated and refreshed every few days.",
+    "antennaTitle": "Stop pointing your\nantenna blind",
+    "antennaBody": "Get the exact compass bearing to any tower. No guessing, no wasted install. Essential for signal boosters, rooftop antennas, and rural setups.",
+    "terrainTitle": "Hills block signal. We know that",
+    "terrainBody": "Most apps ignore elevation. Ours accounts for every hill and valley between you and the tower — so you see where signal actually reaches, not just the distance.",
+    "locationTitle": "One permission,\nthen you're in",
+    "locationBody": "Required to find towers near you and calculate distances. Your location is never stored or shared.",
+    "buttonContinue": "Continue →",
+    "buttonEnableNotifications": "Enable Notifications →",
+    "buttonAllowLocation": "Allow Location →",
+    "buttonNext": "Next →",
+    "buttonDone": "Done ✓"
+  },
+  "map": {
+    "foundPrefix": "Found",
+    "foundSuffix": "towers",
+    "filterAll": "All"
+  },
+  "list": {
+    "title": "Towers",
+    "nearestTower": "Nearest Tower",
+    "nearby": "Nearby  ·  {{count}}",
+    "emptyTitle": "No towers loaded",
+    "emptyHint": "Open the Map tab and pan to an area",
+    "cellPrefix": "Cell"
+  },
+  "tower": {
+    "distance": "Distance",
+    "direction": "Direction",
+    "confidenceTitle": "Confidence",
+    "confidenceBody": "Based on the number of independent measurements for this tower.\n\n• High — 10+ measurements\n• Medium — 3–9 measurements\n• Low — 1–2 measurements\n\nMore measurements from different devices mean a more accurate location.",
+    "confidenceBadge": "Confidence · {{level}}",
+    "confidenceFull": "{{level}} confidence",
+    "cellId": "Cell ID",
+    "eNodeB": "eNodeB",
+    "mccMnc": "MCC / MNC",
+    "lac": "LAC",
+    "coordinates": "Coordinates",
+    "coverageRadius": "Coverage radius",
+    "measurements": "Measurements",
+    "avgSignal": "Avg signal",
+    "flagInaccurate": "⚑ Flag inaccurate",
+    "reported": "Reported",
+    "export": "↑ Export",
+    "thanksTitle": "Thanks!",
+    "thanksBody": "Your report helps improve tower accuracy for everyone."
+  },
+  "settings": {
+    "title": "Settings",
+    "sectionAbout": "About",
+    "sectionPreferences": "Preferences",
+    "sectionSupport": "Support",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
+    "language": "Language",
+    "languageSystem": "System",
+    "contactUs": "Contact Us",
+    "copied": "Copied",
+    "languagePickerTitle": "Language",
+    "languagePickerSystemOption": "Use device language"
+  },
+  "tabs": {
+    "map": "Map",
+    "list": "List"
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "mapEncounteredError": "The map encountered an error.",
+    "tryAgain": "Try again",
+    "noTowersLoaded": "No towers loaded",
+    "noTowersFound": "No towers found",
+    "failedToLoadTowers": "Failed to load towers",
+    "failedToGetLocation": "Failed to get location"
+  },
+  "units": {
+    "m": "m",
+    "km": "km",
+    "ft": "ft",
+    "mi": "mi"
+  },
+  "confidence": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  }
+}

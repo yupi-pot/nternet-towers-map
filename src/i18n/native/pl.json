@@ -1,0 +1,4 @@
+{
+  "NSLocationWhenInUseUsageDescription": "Twoja lokalizacja jest używana do znajdowania pobliskich masztów telefonii, obliczania odległości i wyświetlania azymutu do ustawienia anteny.",
+  "NSUserTrackingUsageDescription": "Cell Tower Map korzysta z AppsFlyer, aby ustalić, która reklama lub kampania sprowadziła Cię tutaj, dzięki czemu możemy ulepszać usługę. Ten wybór nie wpływa na dane masztów ani na żadną funkcję aplikacji."
+}

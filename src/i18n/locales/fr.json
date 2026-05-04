@@ -1,0 +1,98 @@
+{
+  "common": {
+    "ok": "OK",
+    "copy": "Copier",
+    "requesting": "Demande en cours…"
+  },
+  "onboarding": {
+    "videoBadge": "4,5 M d'antennes · mises à jour hier",
+    "videoTitle": "Carte des antennes",
+    "videoSubtitle": "Emplacements réels d'antennes dans plus de 200 pays\nNotés en confiance à partir de mesures réelles",
+    "videoCta": "Commencer →",
+    "databaseTitle": "De vraies antennes. Des emplacements vérifiés",
+    "databaseBody": "Les cartes de couverture des opérateurs ne sont que des estimations — jolies, mais pas précises. La nôtre croise les vraies déclarations d'antennes, notées en confiance et rafraîchies tous les quelques jours.",
+    "antennaTitle": "Arrête d'orienter ton\nantenne à l'aveugle",
+    "antennaBody": "Obtiens l'azimut exact vers n'importe quelle antenne. Plus de devinettes, plus d'installations ratées. Indispensable pour les amplificateurs de signal, les antennes de toit et les installations rurales.",
+    "terrainTitle": "Le relief bloque le signal. On le sait",
+    "terrainBody": "La plupart des applis ignorent le relief. La nôtre prend en compte chaque colline et chaque vallée entre toi et l'antenne — tu vois donc jusqu'où le signal arrive vraiment, pas seulement la distance.",
+    "locationTitle": "Une autorisation,\net c'est parti",
+    "locationBody": "Nécessaire pour trouver les antennes près de toi et calculer les distances. Ta position n'est jamais enregistrée ni partagée.",
+    "buttonContinue": "Continuer →",
+    "buttonEnableNotifications": "Activer les notifications →",
+    "buttonAllowLocation": "Autoriser la localisation →",
+    "buttonNext": "Suivant →",
+    "buttonDone": "Terminé ✓"
+  },
+  "map": {
+    "foundPrefix": "Trouvées",
+    "foundSuffix": "antennes",
+    "filterAll": "Toutes"
+  },
+  "list": {
+    "title": "Antennes",
+    "nearestTower": "Antenne la plus proche",
+    "nearby": "À proximité  ·  {{count}}",
+    "emptyTitle": "Aucune antenne chargée",
+    "emptyHint": "Ouvre l'onglet Carte et déplace-toi vers une zone",
+    "cellPrefix": "Cellule"
+  },
+  "tower": {
+    "distance": "Distance",
+    "direction": "Direction",
+    "confidenceTitle": "Confiance",
+    "confidenceBody": "Basée sur le nombre de mesures indépendantes pour cette antenne.\n\n• Élevée — 10+ mesures\n• Moyenne — 3–9 mesures\n• Faible — 1–2 mesures\n\nPlus de mesures depuis différents appareils donnent une localisation plus précise.",
+    "confidenceBadge": "Confiance · {{level}}",
+    "confidenceFull": "Confiance {{level}}",
+    "cellId": "ID cellule",
+    "eNodeB": "eNodeB",
+    "mccMnc": "MCC / MNC",
+    "lac": "LAC",
+    "coordinates": "Coordonnées",
+    "coverageRadius": "Rayon de couverture",
+    "measurements": "Mesures",
+    "avgSignal": "Signal moy.",
+    "flagInaccurate": "⚑ Signaler une imprécision",
+    "reported": "Signalé",
+    "export": "↑ Exporter",
+    "thanksTitle": "Merci !",
+    "thanksBody": "Ton signalement aide à améliorer la précision des antennes pour tout le monde."
+  },
+  "settings": {
+    "title": "Réglages",
+    "sectionAbout": "À propos",
+    "sectionPreferences": "Préférences",
+    "sectionSupport": "Assistance",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfUse": "Conditions d'utilisation",
+    "language": "Langue",
+    "languageSystem": "Système",
+    "contactUs": "Nous contacter",
+    "copied": "Copié",
+    "languagePickerTitle": "Langue",
+    "languagePickerSystemOption": "Utiliser la langue de l'appareil"
+  },
+  "tabs": {
+    "map": "Carte",
+    "list": "Liste"
+  },
+  "errors": {
+    "somethingWentWrong": "Une erreur est survenue",
+    "mapEncounteredError": "La carte a rencontré une erreur.",
+    "tryAgain": "Réessayer",
+    "noTowersLoaded": "Aucune antenne chargée",
+    "noTowersFound": "Aucune antenne trouvée",
+    "failedToLoadTowers": "Échec du chargement des antennes",
+    "failedToGetLocation": "Échec de la localisation"
+  },
+  "units": {
+    "m": "m",
+    "km": "km",
+    "ft": "ft",
+    "mi": "mi"
+  },
+  "confidence": {
+    "high": "Élevée",
+    "medium": "Moyenne",
+    "low": "Faible"
+  }
+}

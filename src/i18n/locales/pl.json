@@ -1,0 +1,98 @@
+{
+  "common": {
+    "ok": "OK",
+    "copy": "Kopiuj",
+    "requesting": "Wysyłanie…"
+  },
+  "onboarding": {
+    "videoBadge": "4,5 mln masztów · zaktualizowano wczoraj",
+    "videoTitle": "Mapa masztów telefonii",
+    "videoSubtitle": "Prawdziwe lokalizacje masztów w ponad 200 krajach\nOcena wiarygodności na podstawie rzeczywistych pomiarów",
+    "videoCta": "Zaczynamy →",
+    "databaseTitle": "Prawdziwe maszty. Zweryfikowane lokalizacje",
+    "databaseBody": "Mapy zasięgu operatorów to zgadywanka — ładnie wyglądają, ale nie są dokładne. Nasza porównuje rzeczywiste rejestracje masztów, ocenia wiarygodność i jest odświeżana co kilka dni.",
+    "antennaTitle": "Przestań kierować\nantenę na ślepo",
+    "antennaBody": "Zobacz dokładny azymut do dowolnego masztu. Bez zgadywania, bez nieudanych instalacji. Niezbędne dla wzmacniaczy sygnału, anten na dachu i instalacji wiejskich.",
+    "terrainTitle": "Wzgórza blokują sygnał. My to wiemy",
+    "terrainBody": "Większość aplikacji ignoruje ukształtowanie terenu. Nasza uwzględnia każde wzgórze i dolinę między tobą a masztem — więc widzisz, dokąd sygnał naprawdę dociera, a nie tylko odległość.",
+    "locationTitle": "Jedno pozwolenie\ni jesteś w środku",
+    "locationBody": "Wymagane, aby znaleźć maszty w pobliżu i obliczyć odległości. Twoja lokalizacja nigdy nie jest zapisywana ani udostępniana.",
+    "buttonContinue": "Kontynuuj →",
+    "buttonEnableNotifications": "Włącz powiadomienia →",
+    "buttonAllowLocation": "Zezwól na lokalizację →",
+    "buttonNext": "Dalej →",
+    "buttonDone": "Gotowe ✓"
+  },
+  "map": {
+    "foundPrefix": "Znaleziono",
+    "foundSuffix": "masztów",
+    "filterAll": "Wszystkie"
+  },
+  "list": {
+    "title": "Maszty",
+    "nearestTower": "Najbliższy maszt",
+    "nearby": "W pobliżu  ·  {{count}}",
+    "emptyTitle": "Nie wczytano masztów",
+    "emptyHint": "Otwórz zakładkę Mapa i przesuń ją na wybrany obszar",
+    "cellPrefix": "Komórka"
+  },
+  "tower": {
+    "distance": "Odległość",
+    "direction": "Kierunek",
+    "confidenceTitle": "Wiarygodność",
+    "confidenceBody": "Oparta na liczbie niezależnych pomiarów dla tego masztu.\n\n• Wysoka — 10+ pomiarów\n• Średnia — 3–9 pomiarów\n• Niska — 1–2 pomiary\n\nWięcej pomiarów z różnych urządzeń oznacza dokładniejszą lokalizację.",
+    "confidenceBadge": "Wiarygodność · {{level}}",
+    "confidenceFull": "Wiarygodność {{level}}",
+    "cellId": "ID komórki",
+    "eNodeB": "eNodeB",
+    "mccMnc": "MCC / MNC",
+    "lac": "LAC",
+    "coordinates": "Współrzędne",
+    "coverageRadius": "Zasięg",
+    "measurements": "Pomiary",
+    "avgSignal": "Śr. sygnał",
+    "flagInaccurate": "⚑ Zgłoś niedokładność",
+    "reported": "Zgłoszono",
+    "export": "↑ Eksportuj",
+    "thanksTitle": "Dziękujemy!",
+    "thanksBody": "Twoje zgłoszenie pomaga poprawić dokładność danych dla wszystkich."
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "sectionAbout": "O aplikacji",
+    "sectionPreferences": "Preferencje",
+    "sectionSupport": "Pomoc",
+    "privacyPolicy": "Polityka prywatności",
+    "termsOfUse": "Warunki użytkowania",
+    "language": "Język",
+    "languageSystem": "Systemowy",
+    "contactUs": "Skontaktuj się z nami",
+    "copied": "Skopiowano",
+    "languagePickerTitle": "Język",
+    "languagePickerSystemOption": "Użyj języka urządzenia"
+  },
+  "tabs": {
+    "map": "Mapa",
+    "list": "Lista"
+  },
+  "errors": {
+    "somethingWentWrong": "Coś poszło nie tak",
+    "mapEncounteredError": "Wystąpił błąd mapy.",
+    "tryAgain": "Spróbuj ponownie",
+    "noTowersLoaded": "Nie wczytano masztów",
+    "noTowersFound": "Nie znaleziono masztów",
+    "failedToLoadTowers": "Nie udało się wczytać masztów",
+    "failedToGetLocation": "Nie udało się pobrać lokalizacji"
+  },
+  "units": {
+    "m": "m",
+    "km": "km",
+    "ft": "ft",
+    "mi": "mi"
+  },
+  "confidence": {
+    "high": "Wysoka",
+    "medium": "Średnia",
+    "low": "Niska"
+  }
+}

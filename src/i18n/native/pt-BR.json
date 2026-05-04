@@ -1,0 +1,4 @@
+{
+  "NSLocationWhenInUseUsageDescription": "Sua localização é usada para encontrar torres celulares próximas, calcular distâncias e mostrar o rumo para alinhar a antena.",
+  "NSUserTrackingUsageDescription": "O Cell Tower Map usa o AppsFlyer para medir qual anúncio ou campanha trouxe você até aqui, para melhorar o serviço. Esta escolha não afeta os dados das torres nem nenhuma função do app."
+}

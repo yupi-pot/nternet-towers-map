@@ -28,6 +28,7 @@ import Animated, {
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { MapErrorBoundary } from '@/src/components/MapErrorBoundary';
 import CoverageOverlay from '@/src/components/CoverageOverlay';
@@ -288,6 +289,7 @@ function AnimatedCount({ value, textStyle }: { value: number; textStyle: object 
 
 export default function MapTab() {
   const router = useRouter();
+  const { t } = useTranslation();
   const {
     towers,
     isCapped,
@@ -630,10 +632,10 @@ export default function MapTab() {
           {/* Title row — tap 7× to relaunch onboarding */}
           <View style={styles.titleRow}>
             <TouchableOpacity onPress={handleTitleTap} activeOpacity={1} style={styles.titleTapArea}>
-              <Text style={styles.bigTitle}>Found </Text>
+              <Text style={styles.bigTitle}>{t('map.foundPrefix')} </Text>
               <AnimatedCount value={displayCount} textStyle={styles.bigTitleCount} />
               {isCapped && <Text style={styles.bigTitleCount}>+</Text>}
-              <Text style={styles.bigTitle}> towers</Text>
+              <Text style={styles.bigTitle}> {t('map.foundSuffix')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.push('/settings' as never)}
@@ -663,7 +665,7 @@ export default function MapTab() {
               style={[styles.chip, isAllActive ? styles.chipAll : styles.chipInactive]}
               activeOpacity={0.75}
             >
-              <Text style={[styles.chipText, !isAllActive && styles.chipTextInactive]}>All</Text>
+              <Text style={[styles.chipText, !isAllActive && styles.chipTextInactive]}>{t('map.filterAll')}</Text>
             </TouchableOpacity>
             {ALL_RADIOS.map((radio) => {
               const active = !isAllActive && activeFilters.has(radio);

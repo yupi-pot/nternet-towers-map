@@ -1,0 +1,4 @@
+{
+  "NSLocationWhenInUseUsageDescription": "Posisjonen din brukes til å finne mobilmaster i nærheten, beregne avstander og vise retning for å sikte inn antennen.",
+  "NSUserTrackingUsageDescription": "Cell Tower Map bruker AppsFlyer til å måle hvilken annonse eller kampanje som førte deg hit, slik at vi kan forbedre tjenesten. Dette valget påvirker verken mastdataene eller noen funksjon i appen."
+}

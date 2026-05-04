@@ -1,0 +1,98 @@
+{
+  "common": {
+    "ok": "OK",
+    "copy": "Kopier",
+    "requesting": "Sender forespørsel…"
+  },
+  "onboarding": {
+    "videoBadge": "4,5 mill. master · oppdatert i går",
+    "videoTitle": "Mobilmastkart",
+    "videoSubtitle": "Faktiske mastposisjoner i over 200 land\nVurdert etter pålitelighet ut fra reelle målinger",
+    "videoCta": "Kom i gang →",
+    "databaseTitle": "Ekte master. Verifiserte posisjoner",
+    "databaseBody": "Operatørenes dekningskart er gjetting — pene å se på, men ikke nøyaktige. Vårt sammenligner ekte mastregistreringer, vurderer pålitelighet og oppdateres med få dagers mellomrom.",
+    "antennaTitle": "Slutt å sikte antennen\ni blinde",
+    "antennaBody": "Få den nøyaktige retningen til en hvilken som helst mast. Ingen gjetting, ingen bortkastet montering. Uunnværlig for signalforsterkere, takantenner og installasjoner på landet.",
+    "terrainTitle": "Åser blokkerer signalet. Vi vet det",
+    "terrainBody": "De fleste apper ignorerer terrenget. Vår tar hensyn til hver ås og dal mellom deg og masten — så du ser hvor signalet faktisk når, ikke bare avstanden.",
+    "locationTitle": "Én tillatelse,\nså er du i gang",
+    "locationBody": "Trengs for å finne master nær deg og beregne avstander. Posisjonen din lagres eller deles aldri.",
+    "buttonContinue": "Fortsett →",
+    "buttonEnableNotifications": "Slå på varsler →",
+    "buttonAllowLocation": "Tillat posisjon →",
+    "buttonNext": "Neste →",
+    "buttonDone": "Ferdig ✓"
+  },
+  "map": {
+    "foundPrefix": "Fant",
+    "foundSuffix": "master",
+    "filterAll": "Alle"
+  },
+  "list": {
+    "title": "Master",
+    "nearestTower": "Nærmeste mast",
+    "nearby": "I nærheten  ·  {{count}}",
+    "emptyTitle": "Ingen master lastet inn",
+    "emptyHint": "Åpne Kart-fanen og bla til et område",
+    "cellPrefix": "Celle"
+  },
+  "tower": {
+    "distance": "Avstand",
+    "direction": "Retning",
+    "confidenceTitle": "Pålitelighet",
+    "confidenceBody": "Basert på antall uavhengige målinger for denne masten.\n\n• Høy — 10+ målinger\n• Middels — 3–9 målinger\n• Lav — 1–2 målinger\n\nFlere målinger fra ulike enheter gir en mer nøyaktig posisjon.",
+    "confidenceBadge": "Pålitelighet · {{level}}",
+    "confidenceFull": "Pålitelighet {{level}}",
+    "cellId": "Celle-ID",
+    "eNodeB": "eNodeB",
+    "mccMnc": "MCC / MNC",
+    "lac": "LAC",
+    "coordinates": "Koordinater",
+    "coverageRadius": "Dekningsradius",
+    "measurements": "Målinger",
+    "avgSignal": "Snittsignal",
+    "flagInaccurate": "⚑ Rapporter unøyaktighet",
+    "reported": "Rapportert",
+    "export": "↑ Eksporter",
+    "thanksTitle": "Takk!",
+    "thanksBody": "Rapporten din bidrar til å forbedre nøyaktigheten på mastdataene for alle."
+  },
+  "settings": {
+    "title": "Innstillinger",
+    "sectionAbout": "Om",
+    "sectionPreferences": "Innstillinger",
+    "sectionSupport": "Brukerstøtte",
+    "privacyPolicy": "Personvernregler",
+    "termsOfUse": "Vilkår for bruk",
+    "language": "Språk",
+    "languageSystem": "System",
+    "contactUs": "Kontakt oss",
+    "copied": "Kopiert",
+    "languagePickerTitle": "Språk",
+    "languagePickerSystemOption": "Bruk enhetens språk"
+  },
+  "tabs": {
+    "map": "Kart",
+    "list": "Liste"
+  },
+  "errors": {
+    "somethingWentWrong": "Noe gikk galt",
+    "mapEncounteredError": "Det oppstod en feil i kartet.",
+    "tryAgain": "Prøv igjen",
+    "noTowersLoaded": "Ingen master lastet inn",
+    "noTowersFound": "Fant ingen master",
+    "failedToLoadTowers": "Kunne ikke laste master",
+    "failedToGetLocation": "Kunne ikke hente posisjon"
+  },
+  "units": {
+    "m": "m",
+    "km": "km",
+    "ft": "ft",
+    "mi": "mi"
+  },
+  "confidence": {
+    "high": "Høy",
+    "medium": "Middels",
+    "low": "Lav"
+  }
+}
