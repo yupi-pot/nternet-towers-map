@@ -1,9 +1,7 @@
 import { Linking } from 'react-native';
 import { adapty, createPaywallView } from 'react-native-adapty';
 
-import { PLACEMENTS, type PlacementId } from '@/src/config/adapty';
-
-export type PaywallTrigger = keyof typeof PLACEMENTS;
+import { PAYWALL_PLACEMENT } from '@/src/config/adapty';
 
 interface PresentOptions {
   /** Called after a successful purchase. Profile is up to date when this fires. */
@@ -15,22 +13,17 @@ interface PresentOptions {
 }
 
 /**
- * Imperatively present an Adapty Paywall Builder paywall.
+ * Imperatively present the Adapty Paywall Builder paywall.
  *
  * Why: Paywall Builder paywalls render via `view.present()` (a native modal),
  * not as React children. There is no `<Modal>` to wrap.
  */
-export async function presentPaywall(
-  trigger: PaywallTrigger,
-  options: PresentOptions = {},
-): Promise<void> {
-  const placementId: PlacementId = PLACEMENTS[trigger];
-
-  const paywall = await adapty.getPaywall(placementId);
+export async function presentPaywall(options: PresentOptions = {}): Promise<void> {
+  const paywall = await adapty.getPaywall(PAYWALL_PLACEMENT);
 
   if (!paywall.hasViewConfiguration) {
     console.warn(
-      `Adapty paywall for placement "${placementId}" has no view configuration. ` +
+      `Adapty paywall for placement "${PAYWALL_PLACEMENT}" has no view configuration. ` +
         `Toggle "Show on device" on in the Paywall Builder.`,
     );
     return;
