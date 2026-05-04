@@ -2,7 +2,13 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as Sentry from '@sentry/react-native';
 import { useFonts } from 'expo-font';
-import { router, Stack, useNavigationContainerRef, useRootNavigationState } from 'expo-router';
+import {
+  router,
+  Stack,
+  useNavigationContainerRef,
+  usePathname,
+  useRootNavigationState,
+} from 'expo-router';
 import * as FileSystem from 'expo-file-system';
 import * as SecureStore from 'expo-secure-store';
 import * as SplashScreen from 'expo-splash-screen';
@@ -10,10 +16,12 @@ import { useEffect, useState } from 'react';
 import { adapty } from 'react-native-adapty';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { PostHogProvider, usePostHog } from 'posthog-react-native';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { ADAPTY_PUBLIC_KEY } from '@/src/config/adapty';
-import { PremiumProvider } from '@/src/context/PremiumContext';
+import { PremiumProvider, usePremium } from '@/src/context/PremiumContext';
+import { POSTHOG_API_KEY, POSTHOG_HOST } from '@/src/config/posthog';
 
 try {
   adapty.activate(ADAPTY_PUBLIC_KEY, {
@@ -118,23 +126,55 @@ function RootLayoutNav({ needsOnboarding }: { needsOnboarding: boolean }) {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-    <PremiumProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
-          <Stack.Screen
-            name="settings"
-            options={{
-              headerShown: false,
-              presentation: 'modal',
-              gestureEnabled: true,
-            }}
-          />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-      </ThemeProvider>
-    </PremiumProvider>
+      <PostHogProvider
+        apiKey={POSTHOG_API_KEY}
+        options={{
+          host: POSTHOG_HOST,
+          captureAppLifecycleEvents: true,
+          enableSessionReplay: true,
+        }}
+      >
+        <PremiumProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <PostHogTracker />
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+              <Stack.Screen
+                name="settings"
+                options={{
+                  headerShown: false,
+                  presentation: 'modal',
+                  gestureEnabled: true,
+                }}
+              />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+          </ThemeProvider>
+        </PremiumProvider>
+      </PostHogProvider>
     </GestureHandlerRootView>
   );
+}
+
+function PostHogTracker() {
+  const posthog = usePostHog();
+  const pathname = usePathname();
+  const { isPremium, isLoading: premiumLoading } = usePremium();
+
+  useEffect(() => {
+    if (!posthog || !pathname) return;
+    posthog.screen(pathname);
+  }, [posthog, pathname]);
+
+  useEffect(() => {
+    if (!posthog || premiumLoading) return;
+    posthog.register({ is_premium: isPremium });
+    const distinctId = posthog.getDistinctId();
+    if (distinctId) {
+      posthog.identify(distinctId, { is_premium: isPremium });
+    }
+  }, [posthog, isPremium, premiumLoading]);
+
+  return null;
 }
