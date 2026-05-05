@@ -9,7 +9,7 @@ export default function TabLayout() {
   return (
     <DataSourceProvider>
     <TowersProvider>
-      <NativeTabs tintColor="#1c1c1e" inactiveTintColor="#9ca3af">
+      <NativeTabs tintColor="#1c1c1e">
         <NativeTabs.Trigger name="index">
           <Icon sf={{ default: 'map', selected: 'map.fill' }} />
           <Label>{t('tabs.map')}</Label>
