@@ -4,12 +4,16 @@ import { useEffect, useRef, useState } from 'react';
 /**
  * Returns the device's magnetic heading in degrees (0–360, 0 = North).
  * Returns null if the magnetometer is unavailable.
+ *
+ * Pass `enabled=false` to skip subscribing — this defers the iOS Motion
+ * permission prompt until the compass is actually needed (e.g. tower detail).
  */
-export function useCompass(): number | null {
+export function useCompass(enabled: boolean = true): number | null {
   const [heading, setHeading] = useState<number | null>(null);
   const subRef = useRef<ReturnType<typeof Magnetometer.addListener> | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     let active = true;
 
     Magnetometer.isAvailableAsync().then((available) => {
@@ -26,8 +30,9 @@ export function useCompass(): number | null {
     return () => {
       active = false;
       subRef.current?.remove();
+      subRef.current = null;
     };
-  }, []);
+  }, [enabled]);
 
   return heading;
 }

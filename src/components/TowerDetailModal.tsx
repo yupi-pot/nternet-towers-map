@@ -62,7 +62,7 @@ export default function TowerDetailModal({
   const { t } = useTranslation();
   const { isPremium } = usePremium();
   const insets = useSafeAreaInsets();
-  const deviceHeading = useCompass();
+  const deviceHeading = useCompass(tower != null);
   const [flagged, setFlagged] = useState(false);
 
   const cardTranslateY = useSharedValue(500);

@@ -66,6 +66,12 @@
           "project": "cellr"
         }
       ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Cellr reads the device magnetometer to show a live compass that points toward the selected cell tower."
+        }
+      ],
       "expo-video",
       [
         "expo-tracking-transparency",
